@@ -38,3 +38,7 @@ add_test("Testcase SHIFTS" test_shifts)
 add_executable(test_control tests/test_control.c)
 target_link_libraries(test_control 80x86)
 add_test("Testcase CONTROL" test_control)
+
+add_executable(test_rotate tests/test_rotate.c)
+target_link_libraries(test_rotate 80x86)
+add_test("Testcase ROTATE" test_rotate)

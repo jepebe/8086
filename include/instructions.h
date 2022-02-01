@@ -311,7 +311,7 @@ void op_shl_b(CPU *cpu, ReadOperand rop, WriteOperand wop) {
     cpu->flags.CF = carry;
     cpu->flags.ZF = (res & 0xFF) == 0;
     cpu->flags.SF = (res & 0x80) == 0x80;
-    cpu->flags.OF = n == 1 && (carry ^ (res & 0x80));
+    cpu->flags.OF = n == 1 && (carry ^ (res & 0x80)); // todo check if this is correct
     cpu->flags.PF = parity(res);
     *wop.byte = res;
 }
@@ -402,4 +402,176 @@ void op_shr_b(CPU *cpu, ReadOperand rop, WriteOperand wop) {
     cpu->flags.OF = (a & 0x80) == 0x80;
     cpu->flags.PF = parity(res);
     *wop.byte = res;
+}
+
+void op_rcl_w(CPU *cpu, ReadOperand rop, WriteOperand wop) {
+    // overflow applies to rotates of 1 and where the carry bit and MSB are different
+    u16 a = *wop.word;
+    u8 n = rop.byte & 0x1F;
+    if (n == 0) {
+        return;
+    }
+
+    for (int i = 0; i < n; ++i) {
+        u16 carry = cpu->flags.CF;
+        cpu->flags.CF = (a & 0x8000) == 0x8000;
+        a <<= 1;
+        a |= carry;
+    }
+
+    if (n >= 1) { // todo should only be == 1 ???
+        cpu->flags.OF = cpu->flags.CF ^ ((a & 0x8000) == 0x8000);
+    }
+
+    *wop.word = a;
+}
+
+void op_rcl_b(CPU *cpu, ReadOperand rop, WriteOperand wop) {
+    // overflow applies to rotates of 1 and where the carry bit and MSB are different
+    u8 a = *wop.byte;
+    u8 n = rop.byte & 0x1F;
+    if (n == 0) {
+        return;
+    }
+
+    for (int i = 0; i < n; ++i) {
+        u16 carry = cpu->flags.CF;
+        cpu->flags.CF = (a & 0x80) == 0x80;
+        a <<= 1;
+        a |= carry;
+    }
+
+    if (n >= 1) { // todo should only be == 1 ???
+        cpu->flags.OF = cpu->flags.CF ^ ((a & 0x80) == 0x80);
+    }
+
+    *wop.byte = a;
+}
+
+void op_rcr_w(CPU *cpu, ReadOperand rop, WriteOperand wop) {
+    // overflow applies to rotates of 1 and where the carry bit and MSB are different
+    u16 a = *wop.word;
+    u8 n = rop.byte & 0x1F;
+    if (n == 0) {
+        return;
+    }
+
+    for (int i = 0; i < n; ++i) {
+        u16 carry = cpu->flags.CF;
+        cpu->flags.CF = a & 0x1;
+        a >>= 1;
+        a |= carry << 15;
+    }
+
+    if (n >= 1) { // todo should be n == 1 ???
+        cpu->flags.OF = ((a & 0x8000) == 0x8000) ^ ((a & 0x4000) == 0x4000);
+    }
+
+    *wop.word = a;
+}
+
+void op_rcr_b(CPU *cpu, ReadOperand rop, WriteOperand wop) {
+    // overflow applies to rotates of 1 and where the carry bit and MSB are different
+    u16 a = *wop.byte;
+    u8 n = rop.byte & 0x1F;
+    if (n == 0) {
+        return;
+    }
+
+    for (int i = 0; i < n; ++i) {
+        u16 carry = cpu->flags.CF;
+        cpu->flags.CF = a & 0x1;
+        a >>= 1;
+        a |= carry << 7;
+    }
+
+    if (n >= 1) { // todo should be n == 1 ???
+        cpu->flags.OF = ((a & 0x80) == 0x80) ^ ((a & 0x40) == 0x40);
+    }
+
+    *wop.byte = a;
+}
+
+void op_rol_w(CPU *cpu, ReadOperand rop, WriteOperand wop) {
+    // overflow applies to rotates of 1 and where the carry bit and MSB are different
+    u16 a = *wop.word;
+    u8 n = rop.byte & 0x1F;
+    if (n == 0) {
+        return;
+    }
+
+    for (int i = 0; i < n; ++i) {
+        cpu->flags.CF = (a & 0x8000) == 0x8000;
+        a <<= 1;
+        a |= cpu->flags.CF;
+    }
+
+    if (n >= 1) { // todo should only be == 1 ???
+        cpu->flags.OF = cpu->flags.CF ^ ((a & 0x8000) == 0x8000);
+    }
+
+    *wop.word = a;
+}
+
+void op_rol_b(CPU *cpu, ReadOperand rop, WriteOperand wop) {
+    // overflow applies to rotates of 1 and where the carry bit and MSB are different
+    u16 a = *wop.byte;
+    u8 n = rop.byte & 0x1F;
+    if (n == 0) {
+        return;
+    }
+
+    for (int i = 0; i < n; ++i) {
+        cpu->flags.CF = (a & 0x80) == 0x80;
+        a <<= 1;
+        a |= cpu->flags.CF;
+    }
+
+    if (n >= 1) { // todo should only be == 1 ???
+        cpu->flags.OF = cpu->flags.CF ^ ((a & 0x80) == 0x80);
+    }
+
+    *wop.byte = a;
+}
+
+void op_ror_w(CPU *cpu, ReadOperand rop, WriteOperand wop) {
+    // overflow applies to rotates of 1 and where MSB1 and MSB2 are different
+    u16 a = *wop.word;
+    u8 n = rop.byte & 0x1F;
+    if (n == 0) {
+        return;
+    }
+
+    for (int i = 0; i < n; ++i) {
+        cpu->flags.CF = a & 0x1;
+        a >>= 1;
+        a |= cpu->flags.CF << 15;
+    }
+
+    if (n >= 1) { // todo should be n == 1 ???
+        cpu->flags.OF = ((a & 0x8000) == 0x8000) ^ ((a & 0x4000) == 0x4000);
+    }
+
+    *wop.word = a;
+}
+
+void op_ror_b(CPU *cpu, ReadOperand rop, WriteOperand wop) {
+    // overflow applies to rotates of 1 and where MSB1 and MSB2 are different
+    u16 a = *wop.byte;
+    u8 n = rop.byte & 0x1F;
+    if (n == 0) {
+        return;
+    }
+
+    for (int i = 0; i < n; ++i) {
+        cpu->flags.CF = a & 0x1;
+        a >>= 1;
+        a |= cpu->flags.CF << 7;
+    }
+
+    if (n >= 1) { // todo should be n == 1 ???
+        cpu->flags.OF = ((a & 0x80) == 0x80) ^ ((a & 0x40) == 0x40);
+    }
+
+    *wop.byte = a;
 }

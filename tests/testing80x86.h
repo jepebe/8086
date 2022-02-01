@@ -33,7 +33,8 @@ void test_testcase(Tester *tester, char *bin_path, char *res_path, bool check_fl
 
                 test(tester, false, "Flags mismatch");
                 dump_cpu(&cpu, &memory);
-                dump_ram(&cpu, &memory);
+                printf("---\n");
+                //dump_ram(&cpu, &memory);
             }
         }
     }

@@ -107,15 +107,34 @@ const Opcode opcodes_grp1[040] = {
 };
 
 const Opcode opcodes_grp2[040] = { // octal ;D
+        [000] = {op_rol_b, RMB, ONE, "ROL"},
+        [001] = {op_ror_b, RMB, ONE, "ROR"},
+        [002] = {op_rcl_b, RMB, ONE, "RCL"},
+        [003] = {op_rcr_b, RMB, ONE, "RCR"},
         [004] = {op_shl_b, RMB, ONE, "SHL"},
         [005] = {op_shr_b, RMB, ONE, "SHR"},
         [007] = {op_sar_b, RMB, ONE, "SAR"},
+
+        [010] = {op_rol_w, RMW, ONE, "ROL"},
+        [011] = {op_ror_w, RMW, ONE, "ROR"},
+        [012] = {op_rcl_w, RMW, ONE, "RCL"},
+        [013] = {op_rcr_w, RMW, ONE, "RCR"},
         [014] = {op_shl_w, RMW, ONE, "SHL"},
         [015] = {op_shr_w, RMW, ONE, "SHR"},
         [017] = {op_sar_w, RMW, ONE, "SAR"},
+
+        [020] = {op_rol_b, RMB, R_CL, "ROL"},
+        [021] = {op_ror_b, RMB, R_CL, "ROR"},
+        [022] = {op_rcl_b, RMB, R_CL, "RCL"},
+        [023] = {op_rcr_b, RMB, R_CL, "RCR"},
         [024] = {op_shl_b, RMB, R_CL, "SHL"},
         [025] = {op_shr_b, RMB, R_CL, "SHR"},
         [027] = {op_sar_b, RMB, R_CL, "SAR"},
+
+        [030] = {op_rol_w, RMW, R_CL, "ROL"},
+        [031] = {op_ror_w, RMW, R_CL, "ROR"},
+        [032] = {op_rcl_w, RMW, R_CL, "RCL"},
+        [033] = {op_rcr_w, RMW, R_CL, "RCR"},
         [034] = {op_shl_w, RMW, R_CL, "SHL"},
         [035] = {op_shr_w, RMW, R_CL, "SHR"},
         [037] = {op_sar_w, RMW, R_CL, "SAR"},
