@@ -1,8 +1,6 @@
 #include <stdlib.h>
 #include "testing.h"
 #include "cpu.h"
-#include "io.h"
-
 
 void test_registers(Tester *tester) {
     test_section("CPU Registers");
@@ -28,28 +26,28 @@ void test_registers(Tester *tester) {
     test_u64(tester, cpu.DL, 0xFA, "DL");
     test_u64(tester, cpu.DX, 0xFAFA, "DX");
 
-    cpu.Flags = 0xFFFF;
-    test_u64(tester, cpu.CF, 0x1, "CF");
-    test_u64(tester, cpu.PF, 0x1, "PF");
-    test_u64(tester, cpu.AF, 0x1, "AF");
-    test_u64(tester, cpu.ZF, 0x1, "ZF");
-    test_u64(tester, cpu.SF, 0x1, "SF");
-    test_u64(tester, cpu.TF, 0x1, "TF");
-    test_u64(tester, cpu.IF, 0x1, "IF");
-    test_u64(tester, cpu.DF, 0x1, "DF");
-    test_u64(tester, cpu.OF, 0x1, "OF");
+    cpu.flags.word = 0xFFFF;
+    test_u64(tester, cpu.flags.CF, 0x1, "CF");
+    test_u64(tester, cpu.flags.PF, 0x1, "PF");
+    test_u64(tester, cpu.flags.AF, 0x1, "AF");
+    test_u64(tester, cpu.flags.ZF, 0x1, "ZF");
+    test_u64(tester, cpu.flags.SF, 0x1, "SF");
+    test_u64(tester, cpu.flags.TF, 0x1, "TF");
+    test_u64(tester, cpu.flags.IF, 0x1, "IF");
+    test_u64(tester, cpu.flags.DF, 0x1, "DF");
+    test_u64(tester, cpu.flags.OF, 0x1, "OF");
 
-    cpu.CF = 0x0; // bit 0
-    cpu.PF = 0x0; // bit 2
-    cpu.AF = 0x0; // bit 4
-    cpu.ZF = 0x0; // bit 6
-    cpu.SF = 0x0; // bit 7
-    cpu.TF = 0x0; // bit 8
-    cpu.IF = 0x0; // bit 9
-    cpu.DF = 0x0; // bit 10
-    cpu.OF = 0x0; // bit 11
+    cpu.flags.CF = 0x0; // bit 0
+    cpu.flags.PF = 0x0; // bit 2
+    cpu.flags.AF = 0x0; // bit 4
+    cpu.flags.ZF = 0x0; // bit 6
+    cpu.flags.SF = 0x0; // bit 7
+    cpu.flags.TF = 0x0; // bit 8
+    cpu.flags.IF = 0x0; // bit 9
+    cpu.flags.DF = 0x0; // bit 10
+    cpu.flags.OF = 0x0; // bit 11
 
-    test_u64(tester, cpu.Flags, 0xFFFF - 0x0FD5, "Flags");
+    test_u64(tester, cpu.flags.word, 0xFFFF - 0x0FD5, "Flags");
 
     test_u64(tester, cpu.SI, 0x0, "SI");
     test_u64(tester, cpu.DI, 0x0, "DI");
@@ -153,9 +151,12 @@ void test_opcode_decoding(Tester *tester) {
     cpu_tick(&cpu, &memory);
     test_u64(tester, cpu.IP, 11, "IP=11");
     test_u64(tester, cpu.BX, 0x0000, "BX=0x0000 [0]");
-    test(tester, cpu.CF, "Carry Flag Set");
-    test(tester, cpu.OF, "Overflow Flag Set");
-    test(tester, cpu.ZF, "Zero Flag Set");
+    test(tester, cpu.flags.CF, "Carry Flag Set");
+    test(tester, cpu.flags.PF, "Parity Flag Set");
+    test(tester, cpu.flags.AF, "Auxiliary Flag Set");
+    test(tester, !cpu.flags.SF, "Sign Flag Not Set");
+    test(tester, cpu.flags.ZF, "Zero Flag Set");
+    test(tester, !cpu.flags.OF, "Overflow Flag Not Set");
 
     cpu_tick(&cpu, &memory);
     test_u64(tester, cpu.IP, 14, "IP=14");
@@ -183,29 +184,6 @@ void test_operand_order(Tester *tester) {
     test_u64(tester, *((u16 *) &memory.ram[0x8960]), 0x0000, "Ram $8960");
 }
 
-void test_add_bin(Tester *tester) {
-    test_section("add.bin");
-    CPU cpu;
-    cpu_reset(&cpu);
-    Memory memory;
-
-    Binary add = read_binary("../tests/bins/add.bin");
-
-
-    for(size_t i = 0; i < add.size; ++i) {
-        memory.ram[0xF0000 + i] = add.data[i];
-    }
-
-    while (!cpu.halted) {
-        cpu_tick(&cpu, &memory);
-    }
-
-    Binary res_add = read_binary("../tests/bins/res_add.bin");
-    for(size_t i = 0; i < res_add.size; ++i) {
-        testc(tester, (char) memory.ram[i], res_add.data[i], NULL);
-    }
-}
-
 void test_segments(Tester *tester) {
     test_section("Segments");
 
@@ -230,7 +208,6 @@ int main() {
     test_result(&tester);
     test_opcode_decoding(&tester);
     test_operand_order(&tester);
-    test_add_bin(&tester);
 
     test_summary(&tester);
 

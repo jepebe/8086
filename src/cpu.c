@@ -7,6 +7,27 @@
 #include <string.h>
 
 
+void dump_ram(CPU *cpu, Memory *mem) {
+    (void) cpu;
+    for (int i = 0; i < 0x100; i += 16) {
+        printf("$%04X ", i);
+        for (int j = 0; j < 16; ++j) {
+            printf("%02x ", mem->ram[i + j] & 0xFF);
+        }
+        printf("\n");
+    }
+}
+
+void dump_cpu(CPU *cpu, Memory *memory) {
+    (void) memory;
+    printf("[SS:SP] = $%04X:%04X ", cpu->SS, cpu->SP);
+    printf("[CS:IP] = $%04X:%04X\n", cpu->CS, cpu->IP);
+    printf("[AX] = 0x%04X ", cpu->AX);
+    printf("[BX] = 0x%04X ", cpu->BX);
+    printf("[CX] = 0x%04X ", cpu->CX);
+    printf("[DX] = 0x%04X\n", cpu->DX);
+}
+
 void cpu_instruction_context(CPU *cpu, Memory *mem) {
     u32 segment = cpu_ip(cpu) & 0xFFFF0;
     printf("\x1b[0;31m[$%05X] ", segment);
@@ -17,8 +38,7 @@ void cpu_instruction_context(CPU *cpu, Memory *mem) {
     printf("\x1b[0m\n");
 }
 
-__attribute__((noreturn))
-void cpu_error(CPU *cpu, char *message, int value) {
+NO_RETURN void cpu_error(CPU *cpu, char *message, int value) {
     printf("\x1b[0;31m");
     printf("[$%05X] Error: ", cpu_ip(cpu));
     printf(message, value);
@@ -57,8 +77,22 @@ void cpu_peek(CPU *cpu, Memory *mem) {
     printf("\x1b[0m\n");
 }
 
-__attribute__((noreturn))
-void cpu_error_int(CPU *cpu, Memory *memory, char *message, int value) {
+char *flags_to_str(Flags flags) {
+    char *res = malloc(sizeof(char) * 10);
+    res[9] = '\0';
+    res[8] = flags.CF ? 'c' : '.';
+    res[7] = flags.PF ? 'p' : '.';
+    res[6] = flags.AF ? 'a' : '.';
+    res[5] = flags.ZF ? 'z' : '.';
+    res[4] = flags.SF ? 's' : '.';
+    res[3] = flags.TF ? 't' : '.';
+    res[2] = flags.IF ? 'i' : '.';
+    res[1] = flags.DF ? 'd' : '.';
+    res[0] = flags.OF ? 'o' : '.';
+    return res;
+}
+
+NO_RETURN void cpu_error_int(CPU *cpu, Memory *memory, char *message, int value) {
     printf("\x1b[0;31m");
     printf("[$%05X] Error: ", cpu_ip(cpu));
     printf(message, value);
@@ -67,8 +101,7 @@ void cpu_error_int(CPU *cpu, Memory *memory, char *message, int value) {
     exit(1);
 }
 
-__attribute__((noreturn))
-void cpu_error_str(CPU *cpu, Memory *mem, char *message, char *value) {
+NO_RETURN void cpu_error_str(CPU *cpu, Memory *mem, char *message, char *value) {
     printf("\x1b[0;31m");
     printf("[$%05X] Error: ", cpu_ip(cpu));
     printf(message, value);
@@ -89,15 +122,28 @@ u8 read_memory_u8(u32 addr, Memory *memory) {
 
 
 ReadOperand read(CPU *cpu, Memory *mem, AddressOperandCode read_op) {
+    //static_assert(AOC_COUNT == 19, "Exhaustive number of AddressOperandCodes!");
     switch (read_op) {
         case Implied: {
             return (ReadOperand) {0};
+        }
+        case ONE: {
+            return (ReadOperand) {.word = 1};
         }
         case IB: {
             u8 b = read_memory_u8(cpu_ip(cpu), mem);
             cpu->immediate_read = b;
             cpu->IP += 1;
             return (ReadOperand) {.byte = b};
+        }
+        case IB_SE: {
+            u8 lo_byte = read_memory_u8(cpu_ip(cpu), mem);
+            u8 hi_byte = ((lo_byte & 0x80) == 0x80) ? 0xFF : 0x00;
+
+            u16 word = (hi_byte << 8) | lo_byte;
+            cpu->immediate_read = word;
+            cpu->IP += 1;
+            return (ReadOperand) {.word = word};
         }
         case IW: {
             u16 w = read_memory_u16(cpu_ip(cpu), mem);
@@ -108,10 +154,32 @@ ReadOperand read(CPU *cpu, Memory *mem, AddressOperandCode read_op) {
         case R_AX: {
             return (ReadOperand) {.word = cpu->AX};
         }
+        case R_AL: {
+            return (ReadOperand) {.word = cpu->AL};
+        }
+        case R_CX: {
+            return (ReadOperand) {.word = cpu->CX};
+        }
+        case R_CL: {
+            return (ReadOperand) {.word = cpu->CL};
+        }
+        case R_DX: {
+            return (ReadOperand) {.word = cpu->DX};
+        }
+        case SP_PTR: {
+            u16 top = read_memory_u16(cpu_sp(cpu), mem);
+            return (ReadOperand) {.word = top};
+        }
+        case RB:
         case RW: {
-            REG reg = (0x1 << 3) | cpu->addr_mode.reg_sreg;
+            OperandSize op_size = BYTE;
+            if (read_op == RW) {
+                op_size = WORD;
+            }
+            REG reg = (op_size << 3) | cpu->addr_mode.reg_sreg;
             return get_read_register(cpu, reg);
         }
+        case RMB:
         case RMW: {
             OperandSize op_size = BYTE;
             if (read_op == RMW) {
@@ -123,6 +191,9 @@ ReadOperand read(CPU *cpu, Memory *mem, AddressOperandCode read_op) {
                 MemoryModeTable1 mem_mode = cpu->addr_mode.reg_mem;
                 return get_read_memory(cpu, mem, mem_mode);
 
+            } else if (mode == 3) {
+                REG reg = (op_size << 3) | cpu->addr_mode.reg_mem;
+                return get_read_register(cpu, reg);
             }
             cpu_error_marker(cpu, __FILE__, __LINE__);
             cpu_note_int(cpu, "Unsupported mode %d", mode);
@@ -138,6 +209,7 @@ ReadOperand read(CPU *cpu, Memory *mem, AddressOperandCode read_op) {
 
 WriteOperand write(CPU *cpu, Memory *mem, AddressOperandCode write_op) {
     (void) mem;
+    //static_assert(AOC_COUNT == 19, "Exhaustive number of AddressOperandCodes!");
     switch (write_op) {
         case Implied: {
             return (WriteOperand) {0};
@@ -152,17 +224,35 @@ WriteOperand write(CPU *cpu, Memory *mem, AddressOperandCode write_op) {
         case R_AX: {
             return (WriteOperand) {.word =  &cpu->AX};
         }
+        case R_AL: {
+            return (WriteOperand) {.byte =  &cpu->AL};
+        }
+        case R_AH: {
+            return (WriteOperand) {.byte =  &cpu->AH};
+        }
         case R_BX: {
             return (WriteOperand) {.word =  &cpu->BX};
         }
+        case R_BL: {
+            return (WriteOperand) {.byte =  &cpu->BL};
+        }
         case R_CX: {
             return (WriteOperand) {.word =  &cpu->CX};
+        }
+        case R_CL: {
+            return (WriteOperand) {.byte =  &cpu->CL};
+        }
+        case R_CH: {
+            return (WriteOperand) {.byte =  &cpu->CH};
         }
         case R_DX: {
             return (WriteOperand) {.word =  &cpu->DX};
         }
         case R_DH: {
             return (WriteOperand) {.byte =  &cpu->DH};
+        }
+        case R_DL: {
+            return (WriteOperand) {.byte =  &cpu->DL};
         }
         case R_BP: {
             return (WriteOperand) {.word =  &cpu->BP};
@@ -172,6 +262,9 @@ WriteOperand write(CPU *cpu, Memory *mem, AddressOperandCode write_op) {
         }
         case R_SI: {
             return (WriteOperand) {.word =  &cpu->SI};
+        }
+        case R_DI: {
+            return (WriteOperand) {.word =  &cpu->DI};
         }
         case RMB:
         case RMW: {
@@ -195,10 +288,19 @@ WriteOperand write(CPU *cpu, Memory *mem, AddressOperandCode write_op) {
             //cpu_note_int(cpu, "Unsupported mode %d", mode);
             //cpu_error_str(cpu, mem, "Unhandled RM%c mode", (op_size ? "W" : "B"));
         }
+        case RB:
         case RW: {
-            REG reg = (0x1 << 3) | cpu->addr_mode.reg_sreg;
+            OperandSize op_size = BYTE;
+            if (write_op == RW) {
+                op_size = WORD;
+            }
+            REG reg = (op_size << 3) | cpu->addr_mode.reg_sreg;
             // printf("reg = %s [%d]\n", get_register_name(reg), reg);
             return get_write_register(cpu, reg);
+        }
+        case SR: {
+            SegREG reg = cpu->addr_mode.reg_sreg;
+            return get_write_segment_register(cpu, reg);
         }
         case SP_PTR: {
             u32 sp = cpu_sp(cpu);
@@ -217,7 +319,7 @@ static void disassemble_instruction(CPU *cpu, u32 addr, u8 opc, Opcode opcode) {
     printf("[%02X] ", opc); // Opcode number
     printf("%s ", opcode.name); // opcode mnemonic
 
-    char *w = decode_aoc(cpu, opcode.write_op);
+    const char *w = decode_aoc(cpu, opcode.write_op);
 
     if (w[0] != '\0') {
         if (strchr(w, '%') != NULL) {
@@ -227,7 +329,7 @@ static void disassemble_instruction(CPU *cpu, u32 addr, u8 opc, Opcode opcode) {
         }
     }
 
-    char *r = decode_aoc(cpu, opcode.read_op);
+    const char *r = decode_aoc(cpu, opcode.read_op);
 
     if (w[0] != '\0' && r[0] != '\0') {
         printf(", ");
@@ -270,8 +372,10 @@ void cpu_tick(CPU *cpu, Memory *memory) {
 void cpu_reset(CPU *cpu) {
     cpu->CS = 0xFFFF;
     cpu->DS = 0x0000;
+    cpu->SS = 0x0000;
     cpu->IP = 0x0000;
     cpu->halted = false;
+    cpu->flags.word = 0x0002; // set first unused bit to 1
 }
 
 u32 cpu_ip(CPU *cpu) {
@@ -288,5 +392,6 @@ u32 cpu_ds(CPU *cpu, u16 offset) {
 u32 cpu_sp(CPU *cpu) {
     return (cpu->SS << 4) + cpu->SP;
 }
+
 
 

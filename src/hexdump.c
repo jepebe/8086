@@ -3,7 +3,8 @@
 
 
 int main() {
-    Binary binary = read_binary("tests/bins/add.bin");
+    //Binary binary = read_binary("tests/bins/add_word.bin");
+    Binary binary = read_binary("tests/bins/res_control.bin");
 
     for (size_t i = 0; i < binary.size; ++i) {
         if ((i % 16) == 0) {

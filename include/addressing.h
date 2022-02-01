@@ -82,6 +82,22 @@ WriteOperand get_write_register(CPU *cpu, REG reg) {
     }
 }
 
+WriteOperand get_write_segment_register(CPU *cpu, SegREG reg) {
+    switch (reg) {
+        case ES:
+            return (WriteOperand) {.word = &cpu->ES};
+        case CS:
+            return (WriteOperand) {.word = &cpu->CS};
+        case SS:
+            return (WriteOperand) {.word = &cpu->SS};
+        case DS:
+            return (WriteOperand) {.word = &cpu->DS};
+        default:
+            cpu_error_marker(cpu, __FILE__, __LINE__);
+            cpu_error(cpu, "Unknown segment register type '%d'", reg);
+    }
+}
+
 char *get_register_name(REG reg) {
     switch (reg) {
         case AL:
@@ -118,6 +134,21 @@ char *get_register_name(REG reg) {
             return "DI";
         default:
             return "Unknown register";
+    }
+}
+
+char *get_segment_register_name(SegREG reg) {
+    switch (reg) {
+        case ES:
+           return "ES";
+        case CS:
+            return "CS";
+        case SS:
+            return "SS";
+        case DS:
+            return "DS";
+        default:
+            return "Unknown Segment Register";
     }
 }
 
@@ -163,7 +194,7 @@ ReadOperand get_read_memory(CPU *cpu, Memory *mem, MemoryModeTable1 mem_mode) {
             cpu->immediate_read = offset;
             cpu->IP += 2;
             u32 addr = cpu_ds(cpu, offset);
-            return (ReadOperand) {.word = (u16) mem->ram[addr]};
+            return (ReadOperand) {.word = *(u16 *) &mem->ram[addr]};
         }
         case BX_SI_PTR:
         case BX_DI_PTR:
@@ -201,57 +232,50 @@ WriteOperand get_write_memory(CPU *cpu, Memory *mem, MemoryModeTable1 mem_mode, 
         case BX_PTR:
         default: {
             cpu_error_marker(cpu, __FILE__, __LINE__);
-            cpu_error(cpu, "Unhandled write Memory Mode Table 1 '%d'", mem_mode);
+            cpu_error_int(cpu, mem, "Unhandled write Memory Mode Table 1 '%d'", mem_mode);
         }
     }
 }
 
-//WriteOperand get_write_memory_byte(CPU *cpu, Memory *mem, MemoryModeTable1 mem_mode) {
-//    char * err_msg = "unknown Byte Memory Mode Table1 '%s'";
-//    switch (mem_mode) {
-//        case BX_SI_PTR:cpu_error_str(cpu, mem, err_msg, "BX_SI_PTR");
-//        case BX_DI_PTR:cpu_error_str(cpu, mem, err_msg, "BX_DI_PTR");
-//        case BP_SI_PTR:cpu_error_str(cpu, mem, err_msg, "BP_SI_PTR");
-//        case BP_DI_PTR:cpu_error_str(cpu, mem, err_msg, "BP_DI_PTR");
-//        case SI_PTR:cpu_error_str(cpu, mem, err_msg, "SI_PTR");
-//        case DI_PTR:cpu_error_str(cpu, mem, err_msg, "DI_PTR");
-//        case DIRECT: {
-//            cpu_error_str(cpu, mem, err_msg, "DIRECT");
-//        }
-//        case BX_PTR:cpu_error_str(cpu, mem, err_msg, "BX_PTR");
-//        default:cpu_error_int(cpu, mem,"unknown Memory Mode Table 1 '%d'", mem_mode);
-//    }
-//}
+const char *AOC_TABLE[] = {
+        [Implied] = "",
+        [ONE] = "1",
+        [IA] = "IA=0x%04X",
+        [IB] = "IB=0x%02X",
+        [IB_SE] = "IBSE=0x%02X",
+        [IW] = "IW=0x%04X",
+        [R_AX] = "AX",
+        [R_AL] = "AL",
+        [R_AH] = "AH",
+        [R_BX] = "BX",
+        [R_BL] = "BL",
+        [R_CX] = "CX",
+        [R_CL] = "CL",
+        [R_CH] = "CH",
+        [R_DX] = "DX",
+        [R_DL] = "DL",
+        [R_DH] = "DH",
+        [R_BP] = "BP",
+        [R_SP] = "SP",
+        [R_SI] = "SI",
+        [R_DI] = "DI",
+        [SP_PTR] ="", // Implied pointer to SP
+};
 
-char *decode_aoc(CPU *cpu, AddressOperandCode aoc) {
-    static_assert(AOC_COUNT == 16, "Exhaustive number of AddressOperandCodes!");
+const char *decode_aoc(CPU *cpu, AddressOperandCode aoc) {
+    //static_assert(AOC_COUNT == 19, "Exhaustive number of AddressOperandCodes!");
+    const char *repr = AOC_TABLE[aoc];
+    if (repr) {
+        return repr;
+    }
     switch (aoc) {
-        case Implied:
-            return "";
-        case IA:
-            return "IA=0x%04X";
-        case IB:
-            return "IB=0x%02X";
-        case IW:
-            return "IW=0x%04X";
-        case R_AX:
-            return "AX";
-        case R_BX:
-            return "BX";
-        case R_CX:
-            return "CX";
-        case R_DX:
-            return "DX";
-        case R_DH:
-            return "DH";
-        case R_BP:
-            return "BP";
-        case R_SP:
-            return "SP";
-        case R_SI:
-            return "SI";
+        case RB:
         case RW: {
-            REG reg = (0x1 << 3) | cpu->addr_mode.reg_sreg;
+            bool word = false;
+            if (aoc == RW) {
+                word = true;
+            }
+            REG reg = (word << 3) | cpu->addr_mode.reg_sreg;
             return get_register_name(reg);
         }
         case RMB:
@@ -273,8 +297,10 @@ char *decode_aoc(CPU *cpu, AddressOperandCode aoc) {
             cpu_note_int(cpu, "Unsupported mode %d", mode);
             cpu_error(cpu, "Unhandled RM%c mode", (word ? 'W' : 'B'));
         }
-        case SP_PTR:
-            return ""; // Implied pointer to SP
+        case SR: {
+            SegREG reg = cpu->addr_mode.reg_sreg;
+            return get_segment_register_name(reg);
+        }
 
         default: {
             cpu_error_marker(cpu, __FILE__, __LINE__);

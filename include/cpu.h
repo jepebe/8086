@@ -20,6 +20,25 @@ typedef enum {
     WORD
 } OperandSize;
 
+typedef union {
+    u16 word; // status register
+    struct {
+        u8 CF: 1; // Carry Flag
+        u8  : 1; // Not Used
+        u8 PF: 1; // Parity Flag
+        u8  : 1; // Not Used
+        u8 AF: 1; // Auxiliary Carry Flag
+        u8  : 1; // Not Used
+        u8 ZF: 1; // Zero Flag
+        u8 SF: 1; // Sign Flag
+        u8 TF: 1; // Trap Flag
+        u8 IF: 1; // Interrupt Flag
+        u8 DF: 1; // Direction Flag
+        u8 OF: 1; // Overflow Flag
+        u8  : 4; // Not used
+    };
+} Flags;
+
 typedef struct {
     // union __attribute__((__packed__)) {
 
@@ -76,24 +95,8 @@ typedef struct {
 
 
     // status register
-    union {
-        u16 Flags; // status register
-        struct {
-            u8 CF: 1; // Carry Flag
-            u8  : 1; // Not Used
-            u8 PF: 1; // Parity Flag
-            u8  : 1; // Not Used
-            u8 AF: 1; // Auxiliary Carry Flag
-            u8  : 1; // Not Used
-            u8 ZF: 1; // Zero Flag
-            u8 SF: 1; // Sign Flag
-            u8 TF: 1; // Trap Flag
-            u8 IF: 1; // Interrupt Flag
-            u8 DF: 1; // Direction Flag
-            u8 OF: 1; // Overflow Flag
-            u8  : 4; // Not used
-        };
-    };
+    Flags flags;
+
     u8 opcode;
     AddrMode addr_mode;
     bool halted;
@@ -145,20 +148,36 @@ typedef struct {
 typedef enum {
     /// Implied
     Implied,
+    /// One
+    ONE,
     /// Immediate Address
     IA,
     /// Immediate Byte (8 bit)
     IB,
+    /// Immediate Byte (8 bit) + Sign Extend
+    IB_SE,
     /// Immediate Word (16 bit)
     IW,
     /// Register AX
     R_AX,
+    /// Register AL
+    R_AL,
+    /// Register AH
+    R_AH,
     /// Register BX
     R_BX,
+    /// Register BL
+    R_BL,
     /// Register CX
     R_CX,
+    /// Register CL
+    R_CL,
+    /// Register CH
+    R_CH,
     /// Register DX
     R_DX,
+    /// Register DL
+    R_DL,
     /// Register DH
     R_DH,
     /// Register BP - Base Pointer
@@ -167,12 +186,18 @@ typedef enum {
     R_SP,
     /// Register SI - Source Index
     R_SI,
+    /// Register DI - Destination Index
+    R_DI,
     /// Register or Memory Byte
     RMB,
     /// Register or Memory Word
     RMW,
+    /// Register BYTE
+    RB,
     /// Register Word
     RW,
+    /// Segment Register
+    SR,
     /// Pointer to what SP is pointing to
     SP_PTR,
     /// Number of elements in this enum
@@ -200,24 +225,28 @@ u32 cpu_ds(CPU *cpu, u16 offset);
 /// Returns the SP location after SS adjustment
 u32 cpu_sp(CPU *cpu);
 
-__attribute__((noreturn))
-void cpu_error(CPU *cpu, char *message, int value);
+char *flags_to_str(Flags flags);
+
+NO_RETURN void cpu_error(CPU *cpu, char *message, int value);
 
 void cpu_note_int(CPU *cpu, char *message, int value);
 
 void cpu_note_str(CPU *cpu, char *message, char *value);
+
 void cpu_error_marker(CPU *cpu, char *file, int line);
 
 void cpu_peek(CPU *cpu, Memory *mem);
 
-__attribute__((noreturn))
-void cpu_error_int(CPU *cpu, Memory *memory, char *message, int value);
+NO_RETURN void cpu_error_int(CPU *cpu, Memory *memory, char *message, int value);
 
-__attribute__((noreturn))
-void cpu_error_str(CPU *cpu, Memory *memory, char *message, char *value);
+NO_RETURN void cpu_error_str(CPU *cpu, Memory *memory, char *message, char *value);
 
 void cpu_instruction_context(CPU *cpu, Memory *memory);
 
 u16 read_memory_u16(u32 addr, Memory *memory);
 
 u8 read_memory_u8(u32 addr, Memory *memory);
+
+void dump_cpu(CPU *cpu, Memory *memory);
+
+void dump_ram(CPU *cpu, Memory *memory);

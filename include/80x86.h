@@ -1,6 +1,7 @@
 #pragma once
 
 #define static_assert _Static_assert
+#define NO_RETURN __attribute__((noreturn))
 
 
 //#include <errno.h>
