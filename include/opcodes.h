@@ -21,6 +21,11 @@ const Opcode opcodes[256] = {
         [0x13] = {op_adc_w, RW, RMW, "ADC"},
         [0x14] = {op_adc_b, R_AL, IB, "ADC"},
         [0x15] = {op_adc_w, R_AX, IW, "ADC"},
+        [0x18] = {op_sbb_b, RMB, RB, "SBB"},
+        [0x19] = {op_sbb_w, RMW, RW, "SBB"},
+        [0x1A] = {op_sbb_b, RB, RMB, "SBB"},
+        [0x1B] = {op_sbb_w, RW, RMW, "SBB"},
+        [0x1C] = {op_sbb_b, R_AL, IB, "SBB"},
 
         [0x20] = {op_and_b, RMB, RB, "AND"},
         [0x21] = {op_and_w, RMW, RW, "AND"},
@@ -28,6 +33,11 @@ const Opcode opcodes[256] = {
         [0x23] = {op_and_w, RW, RMW, "AND"},
         [0x24] = {op_and_b, R_AL, IB, "AND"},
         [0x25] = {op_and_w, R_AX, IW, "AND"},
+        [0x28] = {op_sub_b, RMB, RB, "SUB"},
+        [0x29] = {op_sub_w, RMW, RW, "SUB"},
+        [0x2A] = {op_sub_b, RB, RMB, "SUB"},
+        [0x2B] = {op_sub_w, RW, RMW, "SUB"},
+        [0x2C] = {op_sub_b, R_AL, IB, "SUB"},
 
         [0x30] = {op_xor_b, RMB, RB, "XOR"},
         [0x31] = {op_xor_w, RMW, RW, "XOR"},
@@ -35,8 +45,13 @@ const Opcode opcodes[256] = {
         [0x33] = {op_xor_w, RW, RMW, "XOR"},
         [0x34] = {op_xor_b, R_AL, IB, "XOR"},
         [0x35] = {op_xor_w, R_AX, IW, "XOR"},
+        [0x38] = {op_cmp_b, RMB, RB, "CMP"},
+        [0x39] = {op_cmp_w, RMW, RW, "CMP"},
+        [0x3A] = {op_cmp_b, RB, RMB, "CMP"},
+        [0x3C] = {op_cmp_b, R_AL, IB, "CMP"},
 
         [0x47] = {op_inc_w, R_DI, Implied, "INC"},
+        [0x4F] = {op_dec_w, R_DI, Implied, "DEC"},
 
         [0x50] = {op_push, SP_PTR, R_AX, "PUSH"},
         [0x51] = {op_push, SP_PTR, R_CX, "PUSH"},
@@ -93,17 +108,26 @@ const Opcode opcodes_grp1[040] = {
         [000] = {op_add_b, RMB, IB, "ADD"},
         [001] = {op_or_b, RMB, IB, "OR"},
         [002] = {op_adc_b, RMB, IB, "ADC"},
+        [003] = {op_sbb_b, RMB, IB, "SBB"},
         [004] = {op_and_b, RMB, IB, "AND"},
+        [005] = {op_sub_b, RMB, IB, "SUB"},
         [006] = {op_xor_b, RMB, IB, "XOR"},
+        [007] = {op_cmp_b, RMB, IB, "CMP"},
 
         [010] = {op_add_w, RMW, IW, "ADD"},
         [011] = {op_or_w, RMW, IW, "OR"},
         [012] = {op_adc_w, RMW, IW, "ADC"},
+        [013] = {op_sbb_w, RMW, IW, "SBB"},
         [014] = {op_and_w, RMW, IW, "AND"},
+        [015] = {op_sub_w, RMW, IW, "SUB"},
         [016] = {op_xor_w, RMW, IW, "XOR"},
+        [017] = {op_cmp_w, RMW, IW, "CMP"},
 
         [030] = {op_add_w, RMW, IB_SE, "ADD"},
         [032] = {op_adc_w, RMW, IB_SE, "ADC"},
+        [033] = {op_sub_w, RMW, IB_SE, "SBB"},
+        [035] = {op_sub_w, RMW, IB_SE, "SUB"},
+        [037] = {op_cmp_w, RMW, IB_SE, "CMP"},
 };
 
 const Opcode opcodes_grp2[040] = { // octal ;D
@@ -143,19 +167,23 @@ const Opcode opcodes_grp2[040] = { // octal ;D
 const Opcode opcodes_grp3a[010] = {
         [000] = {op_test_b, RMB, IB, "TEST"},
         [002] = {op_not_b, RMB, Implied, "NOT"},
+        [003] = {op_neg_b, RMB, Implied, "NEG"},
 };
 
 const Opcode opcodes_grp3b[010] = {
         [000] = {op_test_w, RMW, IW, "TEST"},
         [002] = {op_not_w, RMW, Implied, "NOT"},
+        [003] = {op_neg_w, RMW, Implied, "NEG"},
 };
 
 const Opcode opcodes_grp4[010] = {
         [000] = {op_inc_b, RMB, Implied, "INC"},
+        [001] = {op_dec_b, RMB, Implied, "DEC"},
 };
 
 const Opcode opcodes_grp5[010] = {
         [000] = {op_inc_w, RMW, Implied, "INC"},
+        [001] = {op_dec_w, RMW, Implied, "DEC"},
 };
 
 void fetch_addressing_mode(CPU *cpu, Memory *mem) {
@@ -229,7 +257,7 @@ Opcode fetch_opcode(CPU *cpu, Memory *mem, u8 opcode_num) {
             Opcode grp_opc = opcodes_grp4[grp_idx];
             if (grp_opc.op_fn == 0) {
                 cpu_error_marker(cpu, __FILE__, __LINE__);
-                cpu_note_int(cpu, "group 5 opcode 0%02o not implemented", grp_idx);
+                cpu_note_int(cpu, "group 4 opcode 0%02o not implemented", grp_idx);
             }
             return grp_opc;
         }
@@ -238,7 +266,7 @@ Opcode fetch_opcode(CPU *cpu, Memory *mem, u8 opcode_num) {
             Opcode grp_opc = opcodes_grp5[grp_idx];
             if (grp_opc.op_fn == 0) {
                 cpu_error_marker(cpu, __FILE__, __LINE__);
-                cpu_note_int(cpu, "group opcode 0%02o not implemented", grp_idx);
+                cpu_note_int(cpu, "group 5 opcode 0%02o not implemented", grp_idx);
             }
             return grp_opc;
         }

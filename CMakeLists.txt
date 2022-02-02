@@ -42,3 +42,11 @@ add_test("Testcase CONTROL" test_control)
 add_executable(test_rotate tests/test_rotate.c)
 target_link_libraries(test_rotate 80x86)
 add_test("Testcase ROTATE" test_rotate)
+
+add_executable(test_sub tests/test_sub.c)
+target_link_libraries(test_sub 80x86)
+add_test("Testcase SUB" test_sub)
+
+add_executable(test_cmpneg tests/test_cmpneg.c)
+target_link_libraries(test_cmpneg 80x86)
+add_test("Testcase CMPNEG" test_cmpneg)

@@ -35,10 +35,10 @@ u16 add_word(CPU *cpu, u16 a, u16 b, u8 carry_flag) {
     cpu->flags.PF = parity(sum);
 
     if ((a & 0x8000) == (b & 0x8000)) { // same sign
-        if ((a & 0x8000) == 0x8000) { // negative
-            cpu->flags.OF = ((a + b + carry_flag) & 0xFFFF) < 0x8000;
+        if (a & 0x8000) { // negative
+            cpu->flags.OF = (sum & 0xFFFF) < 0x8000;
         } else {
-            cpu->flags.OF = (a + b + carry_flag) > 0x7FFF;
+            cpu->flags.OF = sum > 0x7FFF;
         }
     } else {
         cpu->flags.OF = 0;
@@ -46,20 +46,62 @@ u16 add_word(CPU *cpu, u16 a, u16 b, u8 carry_flag) {
     return sum & 0xFFFF;
 }
 
-u8 add_byte(CPU *cpu, u8 a, u8 b, u8 carry_flag) {
-    u16 sum = a + b + carry_flag;
+u8 add_byte(CPU *cpu, u8 src, u8 dest, u8 carry_flag) {
+    u16 sum = src + dest + carry_flag;
     cpu->flags.CF = (sum & 0xFF00) > 0;
     cpu->flags.ZF = (sum & 0xFF) == 0x00;
     cpu->flags.SF = (sum & 0x80) == 0x80;
-    cpu->flags.AF = (((a & 0x0f) + (b & 0x0f)) & 0x10) == 0x10;
+    cpu->flags.AF = (((src & 0x0f) + (dest & 0x0f)) & 0x10) == 0x10;
     cpu->flags.PF = parity(sum);
 
-    if ((a & 0x80) == (b & 0x80)) { // same sign
-        if ((a & 0x80)) { // negative
-            cpu->flags.OF = ((a + b + carry_flag) & 0xFF) < 0x80;
+    if ((src & 0x80) == (dest & 0x80)) { // same sign
+        if (src & 0x80) { // negative
+            cpu->flags.OF = (sum & 0xFF) < 0x80;
         } else {
-            cpu->flags.OF = (a + b + carry_flag) > 0x7F;
+            cpu->flags.OF = sum > 0x7F;
         }
+    }
+    return sum & 0xFF;
+}
+
+u16 sub_word(CPU *cpu, u16 src, u16 dest, u8 borrow_flag) {
+    u32 sum = dest + (~src + 1) + (~borrow_flag + 1);
+    bool borrow = (sum & 0xFFFF0000) > 0;
+    cpu->flags.CF = borrow;
+    cpu->flags.ZF = (sum & 0xFFFF) == 0;
+    cpu->flags.SF = (sum & 0x8000) == 0x8000;
+    cpu->flags.AF = ((src & 0x0f) + borrow_flag) > (dest & 0x0f);
+    cpu->flags.PF = parity(sum);
+
+    if ((src & 0x8000) != (dest & 0x8000)) { // not same sign
+        if ((src & 0x8000) == 0x8000) { // negative
+            cpu->flags.OF = (sum & 0xFFFF) >= 0x8000;
+        } else {
+            cpu->flags.OF = sum <= 0x7FFF;
+        }
+    } else {
+        cpu->flags.OF = 0;
+    }
+    return sum & 0xFFFF;
+}
+
+u8 sub_byte(CPU *cpu, u8 src, u8 dest, u8 borrow_flag) {
+    u16 sum = dest + (~src + 1) + (~borrow_flag + 1);
+    bool borrow = (sum & 0xFF00) > 0;
+    cpu->flags.CF = borrow;
+    cpu->flags.ZF = (sum & 0xFF) == 0;
+    cpu->flags.SF = (sum & 0x80) == 0x80;
+    cpu->flags.AF = ((src & 0x0f) + borrow_flag) > (dest & 0x0f);
+    cpu->flags.PF = parity(sum);
+
+    if ((src & 0x80) != (dest & 0x80)) { // not same sign
+        if ((src & 0x80) == 0x80) { // negative
+            cpu->flags.OF = (sum & 0xFF) >= 0x80;
+        } else {
+            cpu->flags.OF = sum <= 0x7F;
+        }
+    } else {
+        cpu->flags.OF = 0;
     }
     return sum & 0xFF;
 }
@@ -88,6 +130,22 @@ void op_adc_b(CPU *cpu, ReadOperand rop, WriteOperand wop) {
 
 void op_adc_w(CPU *cpu, ReadOperand rop, WriteOperand wop) {
     *wop.word = add_word(cpu, rop.word, *wop.word, cpu->flags.CF);
+}
+
+void op_sub_w(CPU *cpu, ReadOperand rop, WriteOperand wop) {
+    *wop.word = sub_word(cpu, rop.word, *wop.word, 0);;
+}
+
+void op_sub_b(CPU *cpu, ReadOperand rop, WriteOperand wop) {
+    *wop.byte = sub_byte(cpu, rop.byte, *wop.byte, 0);
+}
+
+void op_sbb_w(CPU *cpu, ReadOperand rop, WriteOperand wop) {
+    *wop.word = sub_word(cpu, rop.word, *wop.word, cpu->flags.CF);;
+}
+
+void op_sbb_b(CPU *cpu, ReadOperand rop, WriteOperand wop) {
+    *wop.byte = sub_byte(cpu, rop.byte, *wop.byte, cpu->flags.CF);;
 }
 
 void op_and_w(CPU *cpu, ReadOperand rop, WriteOperand wop) {
@@ -280,6 +338,30 @@ void op_inc_w(CPU *cpu, ReadOperand rop, WriteOperand wop) {
     cpu->flags.PF = parity(sum);
     cpu->flags.OF = (a == 0x7FFF) ? 1 : 0;
     *wop.word = sum & 0xFFFF;
+}
+
+void op_dec_w(CPU *cpu, ReadOperand rop, WriteOperand wop) {
+    (void) rop;
+    u16 a = *wop.word;
+    u32 sum = a - 1;
+    cpu->flags.ZF = (sum & 0xFFFF) == 0;
+    cpu->flags.SF = (sum & 0x8000) == 0x8000;
+    cpu->flags.AF = 1 > (a & 0xf);
+    cpu->flags.PF = parity(sum);
+    cpu->flags.OF = (a == 0x8000) ? 1 : 0;
+    *wop.word = sum & 0xFFFF;
+}
+
+void op_dec_b(CPU *cpu, ReadOperand rop, WriteOperand wop) {
+    (void) rop;
+    u8 a = *wop.byte;
+    u16 sum = a - 1;
+    cpu->flags.ZF = (sum & 0xFF) == 0;
+    cpu->flags.SF = (sum & 0x80) == 0x80;
+    cpu->flags.AF = 1 > (a & 0xf);
+    cpu->flags.PF = parity(sum);
+    cpu->flags.OF = (a == 0x80) ? 1 : 0;
+    *wop.byte = sum & 0xFF;
 }
 
 void op_shl_w(CPU *cpu, ReadOperand rop, WriteOperand wop) {
@@ -574,4 +656,26 @@ void op_ror_b(CPU *cpu, ReadOperand rop, WriteOperand wop) {
     }
 
     *wop.byte = a;
+}
+
+void op_cmp_w(CPU *cpu, ReadOperand rop, WriteOperand wop) {
+    u16 src = rop.word;
+    u16 dest = *wop.word;
+    sub_word(cpu, src, dest, 0);
+}
+
+void op_cmp_b(CPU *cpu, ReadOperand rop, WriteOperand wop) {
+    u8 src = rop.byte;
+    u8 dest = *wop.byte;
+    sub_byte(cpu, src, dest, 0);
+}
+
+void op_neg_w(CPU *cpu, ReadOperand rop, WriteOperand wop) {
+    (void) rop;
+    *wop.word = sub_word(cpu,  *wop.word, 0, 0);
+}
+
+void op_neg_b(CPU *cpu, ReadOperand rop, WriteOperand wop) {
+    (void) rop;
+    *wop.byte = sub_byte(cpu,  *wop.byte, 0, 0);
 }
