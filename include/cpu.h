@@ -250,3 +250,4 @@ u8 read_memory_u8(u32 addr, Memory *memory);
 void dump_cpu(CPU *cpu, Memory *memory);
 
 void dump_ram(CPU *cpu, Memory *memory);
+

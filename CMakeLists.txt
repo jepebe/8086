@@ -50,3 +50,7 @@ add_test("Testcase SUB" test_sub)
 add_executable(test_cmpneg tests/test_cmpneg.c)
 target_link_libraries(test_cmpneg 80x86)
 add_test("Testcase CMPNEG" test_cmpneg)
+
+add_executable(test_mul tests/test_mul.c)
+target_link_libraries(test_mul 80x86)
+add_test("Testcase MUL" test_mul)

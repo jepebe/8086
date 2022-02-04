@@ -672,10 +672,100 @@ void op_cmp_b(CPU *cpu, ReadOperand rop, WriteOperand wop) {
 
 void op_neg_w(CPU *cpu, ReadOperand rop, WriteOperand wop) {
     (void) rop;
-    *wop.word = sub_word(cpu,  *wop.word, 0, 0);
+    *wop.word = sub_word(cpu, *wop.word, 0, 0);
 }
 
 void op_neg_b(CPU *cpu, ReadOperand rop, WriteOperand wop) {
     (void) rop;
-    *wop.byte = sub_byte(cpu,  *wop.byte, 0, 0);
+    *wop.byte = sub_byte(cpu, *wop.byte, 0, 0);
+}
+
+void op_mul_w(CPU *cpu, ReadOperand rop, WriteOperand wop) {
+    (void) wop;
+    u32 res = cpu->AX * rop.word;
+    cpu->DX = res >> 16;
+    cpu->AX = res & 0x0000FFFF;
+
+    cpu->flags.CF = cpu->DX != 0;
+    cpu->flags.OF = cpu->DX != 0;
+
+    // these are not supposed to be set
+    cpu->flags.ZF = (res & 0xFFFF) == 0;
+    cpu->flags.SF = (res & 0x8000) == 0x8000;
+    cpu->flags.PF = parity(res);
+}
+
+void op_mul_b(CPU *cpu, ReadOperand rop, WriteOperand wop) {
+    (void) wop;
+    u16 res = cpu->AL * rop.byte;
+    cpu->AX = res;
+
+    cpu->flags.CF = cpu->AH != 0;
+    cpu->flags.OF = cpu->AH != 0;
+
+    // these are not supposed to be set
+    cpu->flags.ZF = res == 0;
+    cpu->flags.SF = (res & 0x80) == 0x80;
+    cpu->flags.PF = parity(res);
+}
+
+static inline u32 sign_extend_word(u16 word) {
+    return ((word & 0x8000) == 0x8000) ? 0xFFFF0000 | word : word;
+}
+
+static inline u16 sign_extend_byte(u8 byte) {
+    return ((byte & 0x80) == 0x80) ? 0xFF00 | byte : byte;
+}
+
+void op_imul_w(CPU *cpu, ReadOperand rop, WriteOperand wop) {
+    (void) wop;
+    u32 src = sign_extend_word(rop.word);
+    u32 dest = sign_extend_word(cpu->AX);
+    u32 res = dest * src;
+    cpu->DX = res >> 16;
+    cpu->AX = res & 0x0000FFFF;
+
+    u32 tmp_res = sign_extend_word(cpu->AX);
+    cpu->flags.CF = res != tmp_res;
+    cpu->flags.OF = res != tmp_res;
+
+    // these are not supposed to be set
+    cpu->flags.ZF = (res & 0xFFFF) == 0;
+    cpu->flags.SF = (res & 0x8000) == 0x8000;
+    cpu->flags.PF = parity(res);
+}
+
+void op_imul_b(CPU *cpu, ReadOperand rop, WriteOperand wop) {
+    (void) wop;
+    u16 src = sign_extend_byte(rop.byte);
+    u16 dest = sign_extend_byte(cpu->AL);
+    u16 res = dest * src;
+    cpu->AH = res >> 8;
+    cpu->AL = res & 0x00FF;
+
+    u16 tmp_res = sign_extend_byte(cpu->AL);
+    cpu->flags.CF = res != tmp_res;
+    cpu->flags.OF = res != tmp_res;
+
+    // these are not supposed to be set
+    cpu->flags.ZF = (res & 0xFF) == 0;
+    cpu->flags.SF = (res & 0x80) == 0x80;
+    cpu->flags.PF = parity(res);
+}
+
+void op_aad(CPU *cpu, ReadOperand rop, WriteOperand wop) {
+    (void) wop;
+    (void) rop;
+    u8 imm8 = rop.byte;
+
+    cpu->AL += cpu->AH * imm8; // probably undefined behavior
+    cpu->AH = 0;
+
+    cpu->flags.ZF = (cpu->AL & 0xFF) == 0;
+    cpu->flags.SF = (cpu->AL & 0x80) == 0x80;
+    cpu->flags.PF = parity(cpu->AL);
+
+    // these are not supposed to be set -> undefined
+    cpu->flags.CF = 0;
+    cpu->flags.OF = 0;
 }

@@ -93,6 +93,8 @@ const Opcode opcodes[256] = {
         [0xC6] = {op_mov_w, RMB, IB, "MOV"},
         [0xC7] = {op_mov_w, RMW, IW, "MOV"},
 
+        [0xD5] = {op_aad, Implied, IB, "AAD"},
+
         [0xEB] = {op_jmp, Implied, IB, "JMP"},
         [0xF4] = {op_hlt, Implied, Implied, "HLT"},
         [0xF5] = {op_cmc, Implied, Implied, "CMC"},
@@ -168,12 +170,16 @@ const Opcode opcodes_grp3a[010] = {
         [000] = {op_test_b, RMB, IB, "TEST"},
         [002] = {op_not_b, RMB, Implied, "NOT"},
         [003] = {op_neg_b, RMB, Implied, "NEG"},
+        [004] = {op_mul_b, Implied, RMB, "MUL"},
+        [005] = {op_imul_b, Implied, RMB, "IMUL"},
 };
 
 const Opcode opcodes_grp3b[010] = {
         [000] = {op_test_w, RMW, IW, "TEST"},
         [002] = {op_not_w, RMW, Implied, "NOT"},
         [003] = {op_neg_w, RMW, Implied, "NEG"},
+        [004] = {op_mul_w, Implied, RMW, "MUL"},
+        [005] = {op_imul_w, Implied, RMW, "IMUL"},
 };
 
 const Opcode opcodes_grp4[010] = {
