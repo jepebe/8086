@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include "testing.h"
 #include "cpu.h"
+#include "addressing.h"
 
 void test_registers(Tester *tester) {
     test_section("CPU Registers");
@@ -120,6 +121,7 @@ void test_opcode_decoding(Tester *tester) {
     test_section("Opcode Decoding");
     CPU cpu = {0};
     Memory memory = {0};
+    Machine machine = {.cpu = &cpu, .memory = &memory};
     memory.ram[0] = 0xBC;
     memory.ram[1] = 0xA0;
     memory.ram[2] = 0x00;
@@ -136,19 +138,19 @@ void test_opcode_decoding(Tester *tester) {
     memory.ram[13] = 0x00;
 
     test_u64(tester, cpu.IP, 0, "IP=0");
-    cpu_tick(&cpu, &memory);
+    machine_tick(&machine);
     test_u64(tester, cpu.IP, 3, "IP=3");
     test_u64(tester, cpu.SP, 0x00A0, "SP=0x00A0 [160]");
 
-    cpu_tick(&cpu, &memory);
+    machine_tick(&machine);
     test_u64(tester, cpu.IP, 6, "IP=6");
     test_u64(tester, cpu.AX, 0xFFFF, "AX=0xFFFF [65535]");
 
-    cpu_tick(&cpu, &memory);
+    machine_tick(&machine);
     test_u64(tester, cpu.IP, 9, "IP=9");
     test_u64(tester, cpu.BX, 0x0001, "BX=0x0001 [1]");
 
-    cpu_tick(&cpu, &memory);
+    machine_tick(&machine);
     test_u64(tester, cpu.IP, 11, "IP=11");
     test_u64(tester, cpu.BX, 0x0000, "BX=0x0000 [0]");
     test(tester, cpu.flags.CF, "Carry Flag Set");
@@ -158,7 +160,7 @@ void test_opcode_decoding(Tester *tester) {
     test(tester, cpu.flags.ZF, "Zero Flag Set");
     test(tester, !cpu.flags.OF, "Overflow Flag Not Set");
 
-    cpu_tick(&cpu, &memory);
+    machine_tick(&machine);
     test_u64(tester, cpu.IP, 14, "IP=14");
     test_u64(tester, memory.ram[0], 0xFF, "[0000]=0xFF [255]");
     test_u64(tester, memory.ram[1], 0xFF, "[0001]=0xFF [255]");
@@ -169,6 +171,7 @@ void test_operand_order(Tester *tester) {
     test_section("Operand Order");
     CPU cpu = {0};
     Memory memory = {0};
+    Machine machine = {.cpu = &cpu, .memory = &memory};
     // MOV word[0x0012], 0x8960
     // C7 06 12 00 60 89
     memory.ram[0] = 0xC7;
@@ -178,7 +181,7 @@ void test_operand_order(Tester *tester) {
     memory.ram[4] = 0x60;
     memory.ram[5] = 0x89;
 
-    cpu_tick(&cpu, &memory);
+    machine_tick(&machine);
 
     test_u64(tester, *((u16 *) &memory.ram[0x0012]), 0x8960, "Ram $0012");
     test_u64(tester, *((u16 *) &memory.ram[0x8960]), 0x0000, "Ram $8960");

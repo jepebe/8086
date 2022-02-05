@@ -11,9 +11,19 @@ else ()
     add_compile_options(-Wall -Wextra -pedantic -Werror)
 endif ()
 
+set(SOURCES
+    src/addressing.c
+    src/cpu.c
+    src/debug.c
+    src/machine.c
+    src/memory.c
+    src/opcodes.c
+)
+
+
 include_directories(include/)
 
-add_library(80x86 STATIC src/cpu.c)
+add_library(80x86 STATIC ${SOURCES})
 
 add_executable(hexdump src/hexdump.c)
 
@@ -54,3 +64,11 @@ add_test("Testcase CMPNEG" test_cmpneg)
 add_executable(test_mul tests/test_mul.c)
 target_link_libraries(test_mul 80x86)
 add_test("Testcase MUL" test_mul)
+
+add_executable(test_div tests/test_div.c)
+target_link_libraries(test_div 80x86)
+add_test("Testcase DIV" test_div)
+
+add_executable(test_interrupt tests/test_interrupt.c)
+target_link_libraries(test_interrupt 80x86)
+add_test("Testcase INTERRUPT" test_interrupt)
