@@ -21,5 +21,9 @@ u32 cpu_sp(CPU *cpu) {
     return ((cpu->SS << 4) + cpu->SP) & 0xFFFFF;
 }
 
+u32 cpu_es(CPU *cpu, u16 offset) {
+    return ((cpu->ES << 4) + offset) & 0xFFFFF;
+}
+
 
 

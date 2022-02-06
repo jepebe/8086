@@ -63,6 +63,12 @@ typedef enum {
     WORD_DISP,
 } DisplacementType;
 
+typedef struct {
+    MemoryModeTable memory_mode;
+    DisplacementType displacement_type;
+    OperandSize operand_size;
+} MemoryMode;
+
 void fetch_addressing_mode(Machine *machine);
 
 AddrMode peek_addressing_mode(Machine *machine);
@@ -75,12 +81,9 @@ WriteOperand get_write_segment_register(Machine *machine, SegREG reg);
 
 ReadOperand get_read_segment_register(Machine *machine, SegREG reg);
 
-ReadOperand get_read_memory(Machine *machine, MemoryModeTable mem_mode, DisplacementType disp_type, OperandSize op_size);
+ReadOperand get_read_memory(Machine *machine, MemoryMode mode);
 
-WriteOperand get_write_memory(Machine *machine, MemoryModeTable mem_mode, bool disp_type, OperandSize op_size);
-
-
-
+WriteOperand get_write_memory(Machine *machine, MemoryMode mode);
 
 char *get_register_name(REG reg);
 

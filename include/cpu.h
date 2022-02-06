@@ -109,11 +109,14 @@ typedef struct {
 
 void cpu_reset(CPU *cpu);
 
-/// Correctly return the IP with the CS offset
+/// Correctly return the IP in the CS segment
 u32 cpu_ip(CPU *cpu);
 
-/// Correctly return an address with the DS offset
+/// Correctly return an address in the DS segment
 u32 cpu_ds(CPU *cpu, u16 offset);
 
-/// Returns the SP location after SS adjustment
+/// Correctly return an address int the ES segment
+u32 cpu_es(CPU *cpu, u16 offset);
+
+/// Returns the SP location as an address in the SS segment
 u32 cpu_sp(CPU *cpu);

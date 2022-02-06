@@ -14,12 +14,16 @@ void dump_ram(Machine *machine) {
 
 void dump_cpu(Machine *machine) {
     CPU *cpu = machine->cpu;
+    printf("\x1b[0;33m");
     printf("[SS:SP] = $%04X:%04X ", cpu->SS, cpu->SP);
-    printf("[CS:IP] = $%04X:%04X\n", cpu->CS, cpu->IP);
+    printf("[CS:IP] = $%04X:%04X ", cpu->CS, cpu->IP);
+    printf("[DS:SI] = $%04X:%04X ", cpu->DS, cpu->SI);
+    printf("[ES:DI] = $%04X:%04X\n", cpu->ES, cpu->DI);
     printf("[AX] = 0x%04X ", cpu->AX);
     printf("[BX] = 0x%04X ", cpu->BX);
     printf("[CX] = 0x%04X ", cpu->CX);
-    printf("[DX] = 0x%04X\n", cpu->DX);
+    printf("[DX] = 0x%04X ", cpu->DX);
+    printf("\x1b[0m\n");
 }
 
 void cpu_instruction_context(Machine *machine) {
@@ -128,5 +132,12 @@ void print_stack(Machine *machine) {
     for(int i = 0; i < 5; ++i) {
         printf("0x%04X ", read_memory_u16(addr + i * 2, machine->memory));
     }
+    printf("]\x1b[0m\n");
+}
+
+void print_flags(Machine *machine) {
+    char *flags = flags_to_str(machine->cpu->flags);
+    printf("\x1b[0;33m[flags=0x%04X ", machine->cpu->flags.word);
+    printf("%s", flags);
     printf("]\x1b[0m\n");
 }

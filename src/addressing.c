@@ -126,14 +126,14 @@ ReadOperand get_read_segment_register(Machine *machine, SegREG reg) {
     }
 }
 
-ReadOperand get_read_memory(Machine *machine, MemoryModeTable mem_mode, DisplacementType disp_type, OperandSize op_size) {
+static u16 get_displacement(Machine *machine, MemoryMode mode) {
     CPU *cpu = machine->cpu;
     Memory *mem = machine->memory;
 
     u16 displacement = 0;
-    switch (disp_type) {
+    switch (mode.displacement_type) {
         case NO_DISP: {
-            if (mem_mode == DIRECT_OR_BP_PTR) {
+            if (mode.memory_mode == DIRECT_OR_BP_PTR) {
                 displacement = read_memory_u16(cpu_ip(cpu), mem);
                 cpu->IP += 2;
             }
@@ -151,14 +151,17 @@ ReadOperand get_read_memory(Machine *machine, MemoryModeTable mem_mode, Displace
         }
         default:
             cpu_error_marker(machine, __FILE__, __LINE__);
-            cpu_error(machine, "Unknown displacement type %d", disp_type);
+            cpu_error(machine, "Unknown displacement type %d", mode.displacement_type);
     }
-    cpu->immediate_read = displacement;
+    return displacement;
+}
 
-    u32 addr = 0;
-    switch (mem_mode) {
+static u32 displace_address(Machine *machine, MemoryMode mode, u16 displacement) {
+    CPU *cpu = machine->cpu;
+    u32 addr;
+    switch (mode.memory_mode) {
         case DIRECT_OR_BP_PTR: {
-            if (disp_type == NO_DISP) {
+            if (mode.displacement_type == NO_DISP) {
                 // direct
                 addr = cpu_ds(cpu, displacement);
             } else {
@@ -171,81 +174,59 @@ ReadOperand get_read_memory(Machine *machine, MemoryModeTable mem_mode, Displace
             addr = cpu_ds(cpu, cpu->SI + displacement);
             break;
         }
+        case DI_PTR: {
+            addr = cpu_ds(cpu, cpu->DI + displacement);
+            break;
+        }
         case BX_SI_PTR:
         case BX_DI_PTR:
         case BP_SI_PTR:
         case BP_DI_PTR:
-
-        case DI_PTR:
         case BX_PTR:
         default: {
             cpu_error_marker(machine, __FILE__, __LINE__);
-            cpu_error(machine, "Unhandled read Memory Mode Table '%d'", mem_mode);
+            cpu_error(machine, "Unhandled Memory Mode Table mode '%d'", mode.memory_mode);
         }
     }
-    switch (op_size) {
+    return addr;
+}
+
+ReadOperand get_read_memory(Machine *m, MemoryMode mode) {
+    Memory *mem = m->memory;
+
+    u16 displacement = get_displacement(m, mode);
+    m->cpu->immediate_read = displacement;
+    u32 addr = displace_address(m, mode, displacement);
+
+    switch (mode.operand_size) {
         case BYTE:
             return (ReadOperand) {.byte = *(u8 *) &mem->ram[addr]};
         case WORD:
             return (ReadOperand) {.word = *(u16 *) &mem->ram[addr]};
         default: {
-            cpu_error_marker(machine, __FILE__, __LINE__);
-            cpu_error(machine, "Unknown operand size '%d'", op_size);
+            cpu_error_marker(m, __FILE__, __LINE__);
+            cpu_error(m, "Unknown operand size '%d'", mode.operand_size);
         }
-
     }
 }
 
-WriteOperand get_write_memory(Machine *machine, MemoryModeTable mem_mode, bool has_displacement, OperandSize op_size) {
-    CPU *cpu = machine->cpu;
-    Memory *mem = machine->memory;
-    switch (mem_mode) {
-        case DIRECT_OR_BP_PTR: {
-            if (!has_displacement) {
-                u16 offset = read_memory_u16(cpu_ip(cpu), mem);
-                cpu->immediate_write = offset;
-                cpu->IP += 2;
-                u32 addr = cpu_ds(cpu, offset);
-                if (op_size == WORD) {
-                    return (WriteOperand) {.word = (u16 *) &mem->ram[addr]};
-                } else {
-                    return (WriteOperand) {.byte = (u8 *) &mem->ram[addr]};
-                }
-            } else {
-                // [BP+disp]
-                u8 displacement = read_memory_u8(cpu_ip(cpu), mem);
-                cpu->immediate_write = displacement;
-                cpu->IP += 1;
-                u32 addr = cpu_ds(cpu, cpu->BP + displacement);
-                return (WriteOperand) {.byte = (u8 *) &mem->ram[addr]};
-            }
-        }
-        case BX_SI_PTR:
-        case BX_DI_PTR:
-        case BP_SI_PTR:
-        case BP_DI_PTR:
-        case SI_PTR:
-        case DI_PTR: {
-            // [DI]
-            u8 displacement = 0;
+WriteOperand get_write_memory(Machine *m, MemoryMode mode) {
+    Memory *mem = m->memory;
+    u16 displacement = get_displacement(m, mode);
+    m->cpu->immediate_write = displacement;
+    u32 addr = displace_address(m, mode, displacement);
 
-            if (has_displacement) {
-                // [DI+disp]
-                displacement = read_memory_u8(cpu_ip(cpu), mem);
-                cpu->IP += 1;
-            }
-            cpu->immediate_read = displacement;
-            u32 addr = cpu_ds(cpu, cpu->DI + displacement);
+    switch (mode.operand_size) {
+        case BYTE:
             return (WriteOperand) {.byte = (u8 *) &mem->ram[addr]};
-        }
-        case BX_PTR:
+        case WORD:
+            return (WriteOperand) {.word = (u16 *) &mem->ram[addr]};
         default: {
-            cpu_error_marker(machine, __FILE__, __LINE__);
-            cpu_error_int(machine, "Unhandled write Memory Mode Table '%d'", mem_mode);
+            cpu_error_marker(m, __FILE__, __LINE__);
+            cpu_error(m, "Unknown operand size '%d'", mode.operand_size);
         }
     }
 }
-
 
 char *get_register_name(REG reg) {
     switch (reg) {

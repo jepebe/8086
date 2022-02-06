@@ -67,6 +67,7 @@ void machine_tick(Machine *m) {
         cpu_error_int(m, "opcode 0x%02X not implemented", opcode_num);
     }
     //print_stack(m);
+    //dump_cpu(m);
     //cpu_instruction_context(m);
 }
 

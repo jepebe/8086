@@ -10,3 +10,12 @@ u16 read_memory_u16(u32 addr, Memory *memory) {
 u8 read_memory_u8(u32 addr, Memory *memory) {
     return memory->ram[addr];
 }
+
+void write_memory_u8(u32 addr, Memory *memory, u8 value) {
+    memory->ram[addr] = value;
+}
+
+void write_memory_u16(u32 addr, Memory *memory, u16 value) {
+    memory->ram[addr] = value & 0x00FF;
+    memory->ram[addr + 1] = value >> 8;
+}

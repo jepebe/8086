@@ -28,3 +28,5 @@ void dump_ram(Machine *machine);
 void cpu_instruction_context(Machine *machine);
 
 void print_stack(Machine *machine);
+
+void print_flags(Machine *machine);

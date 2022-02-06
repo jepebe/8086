@@ -64,6 +64,8 @@ const Opcode opcodes[] = {
         [0x5B] = {op_pop, R_BX, Implied, "POP"},
         [0x5F] = {op_pop, R_DI, Implied, "POP"},
 
+        [0x74] = {op_jz, Implied, IB, "JZ"},
+
         [0x84] = {op_test_b, RMB, RB, "TEST"},
         [0x85] = {op_test_w, RMW, RW, "TEST"},
         [0x88] = {op_mov_b, RMB, RB, "MOV"},
@@ -75,11 +77,22 @@ const Opcode opcodes[] = {
         [0x90] = {op_nop, Implied, Implied, "NOP"},
         [0x9C] = {op_pushf, Implied, Implied, "PUSHF"},
         [0x9D] = {op_popf, Implied, Implied, "POPF"},
+        [0x9F] = {op_lahf, Implied, Implied, "LAHF"},
 
         [0xA2] = {op_mov_b, IA, R_AL, "MOV"},
         [0xA3] = {op_mov_w, IA, R_AX, "MOV"},
+        [0xA4] = {op_movs_b, Implied, Implied, "MOVSB"},
+        [0xA5] = {op_movs_w, Implied, Implied, "MOVSW"},
+        [0xA6] = {op_cmps_b, Implied, Implied, "CMPSB"},
+        [0xA7] = {op_cmps_w, Implied, Implied, "CMPSW"},
         [0xA8] = {op_test_b, R_AL, IB, "TEST"},
         [0xA9] = {op_test_w, R_AX, IW, "TEST"},
+        [0xAA] = {op_stos_b, Implied, Implied, "STOSB"},
+        [0xAB] = {op_stos_w, Implied, Implied, "STOSW"},
+        [0xAC] = {op_lods_b, Implied, Implied, "LODSB"},
+        [0xAD] = {op_lods_w, Implied, Implied, "LODSW"},
+        [0xAE] = {op_scas_b, Implied, Implied, "SCASB"},
+        [0xAF] = {op_scas_w, Implied, Implied, "SCASW"},
 
         [0xB0] = {op_mov_b, R_AL, IB, "MOV"},
         [0xB1] = {op_mov_b, R_CL, IB, "MOV"},
@@ -97,6 +110,7 @@ const Opcode opcodes[] = {
         [0xBE] = {op_mov_w, R_SI, IW, "MOV"},
         [0xBF] = {op_mov_w, R_DI, IW, "MOV"},
 
+        [0xC3] = {op_ret, Implied, Implied, "RET"},
         [0xC6] = {op_mov_b, RMB, IB, "MOV"},
         [0xC7] = {op_mov_w, RMW, IW, "MOV"},
         [0xCD] = {op_int, Implied, IB, "INT"},
@@ -355,18 +369,23 @@ ReadOperand decode_read_op(Machine *machine, AddressOperandCode read_op) {
             if (read_op == RMW) {
                 op_size = WORD;
             }
+
+            MemoryMode memory_mode;
+            memory_mode.memory_mode = cpu->addr_mode.reg_mem;
+            memory_mode.operand_size = op_size;
+
             u8 mode = cpu->addr_mode.mode;
             if (mode == 0) {
-                MemoryModeTable mem_mode = cpu->addr_mode.reg_mem;
-                return get_read_memory(machine, mem_mode, NO_DISP, op_size);
+                memory_mode.displacement_type = NO_DISP;
+                return get_read_memory(machine, memory_mode);
             } else if (mode == 1) {
-                MemoryModeTable mem_mode = cpu->addr_mode.reg_mem;
-                return get_read_memory(machine, mem_mode, BYTE_DISP, op_size);
+                memory_mode.displacement_type = BYTE_DISP;
+                return get_read_memory(machine, memory_mode);
             } else if (mode == 2) {
-                MemoryModeTable mem_mode = cpu->addr_mode.reg_mem;
-                return get_read_memory(machine, mem_mode, WORD_DISP, op_size);
+                memory_mode.displacement_type = WORD_DISP;
+                return get_read_memory(machine, memory_mode);
             } else if (mode == 3) {
-                REG reg = (op_size << 3) | cpu->addr_mode.reg_mem;
+                REG reg = (op_size << 3) | memory_mode.memory_mode;
                 return get_read_register(machine, reg);
             }
             cpu_error_marker(machine, __FILE__, __LINE__);
@@ -450,15 +469,20 @@ WriteOperand decode_write_op(Machine *machine, AddressOperandCode write_op) {
             if (write_op == RMW) {
                 op_size = WORD;
             }
+
+            MemoryMode memory_mode;
+            memory_mode.memory_mode = cpu->addr_mode.reg_mem;
+            memory_mode.operand_size = op_size;
+
             u8 mode = cpu->addr_mode.mode;
             if (mode == 0) {
-                MemoryModeTable mem_mode = cpu->addr_mode.reg_mem;
-                return get_write_memory(machine, mem_mode, false, op_size);
+                memory_mode.displacement_type = NO_DISP;
+                return get_write_memory(machine, memory_mode);
             } else if (mode == 1) {
-                MemoryModeTable mem_mode = cpu->addr_mode.reg_mem;
-                return get_write_memory(machine, mem_mode, true, op_size);
+                memory_mode.displacement_type = BYTE_DISP;
+                return get_write_memory(machine, memory_mode);
             } else if (mode == 3) {
-                REG reg = (op_size << 3) | cpu->addr_mode.reg_mem;
+                REG reg = (op_size << 3) | memory_mode.memory_mode;
                 return get_write_register(machine, reg);
             }
             cpu_error_marker(machine, __FILE__, __LINE__);
@@ -539,11 +563,11 @@ const char *decode_aoc(Machine *machine, AddressOperandCode aoc) {
             u8 mode = cpu->addr_mode.mode;
             if (mode == 0) {
                 MemoryModeTable mem_mode = cpu->addr_mode.reg_mem;
-                return get_memory_mode_table_name(mem_mode,NO_DISP);
+                return get_memory_mode_table_name(mem_mode, NO_DISP);
 
             } else if (mode == 1) {
                 MemoryModeTable mem_mode = cpu->addr_mode.reg_mem;
-                return get_memory_mode_table_name(mem_mode,BYTE_DISP);
+                return get_memory_mode_table_name(mem_mode, BYTE_DISP);
 
             } else if (mode == 2) {
                 MemoryModeTable mem_mode = cpu->addr_mode.reg_mem;

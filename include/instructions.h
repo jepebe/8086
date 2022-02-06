@@ -134,7 +134,7 @@ void op_adc_w(Machine *m, ReadOperand rop, WriteOperand wop) {
 }
 
 void op_sub_w(Machine *m, ReadOperand rop, WriteOperand wop) {
-    *wop.word = sub_word(m, rop.word, *wop.word, 0);;
+    *wop.word = sub_word(m, rop.word, *wop.word, 0);
 }
 
 void op_sub_b(Machine *m, ReadOperand rop, WriteOperand wop) {
@@ -142,11 +142,11 @@ void op_sub_b(Machine *m, ReadOperand rop, WriteOperand wop) {
 }
 
 void op_sbb_w(Machine *m, ReadOperand rop, WriteOperand wop) {
-    *wop.word = sub_word(m, rop.word, *wop.word, m->cpu->flags.CF);;
+    *wop.word = sub_word(m, rop.word, *wop.word, m->cpu->flags.CF);
 }
 
 void op_sbb_b(Machine *m, ReadOperand rop, WriteOperand wop) {
-    *wop.byte = sub_byte(m, rop.byte, *wop.byte, m->cpu->flags.CF);;
+    *wop.byte = sub_byte(m, rop.byte, *wop.byte, m->cpu->flags.CF);
 }
 
 void op_and_w(Machine *m, ReadOperand rop, WriteOperand wop) {
@@ -162,8 +162,6 @@ void op_and_b(Machine *m, ReadOperand rop, WriteOperand wop) {
     u8 src = rop.byte;
     u8 dest = *wop.byte;
     u8 res = dest & src;
-
-//    printf("AND 0x%02X & 0x%02X = 0x%02X\n", src, dest, res);
 
     set_logical_flags_b(m, res);
     *wop.byte = res;
@@ -244,10 +242,17 @@ void op_jmp_near(Machine *m, ReadOperand rop, WriteOperand wop) {
     m->cpu->IP = rop.word;
 }
 
+void op_jz(Machine *m, ReadOperand rop, WriteOperand wop) {
+    (void) wop;
+    if (m->cpu->flags.ZF == 1) {
+        m->cpu->IP += (s8) rop.byte;
+    }
+}
+
 /// Returns a pointer to the top of the stack
-u16* stack_pointer(Machine *machine) {
+u16 *stack_pointer(Machine *machine) {
     u32 sp = cpu_sp(machine->cpu);
-    return(u16 *) &machine->memory->ram[sp];
+    return (u16 *) &machine->memory->ram[sp];
 }
 
 /// Returns the value at the top of the stack
@@ -387,7 +392,7 @@ void op_dec_b(Machine *m, ReadOperand rop, WriteOperand wop) {
 }
 
 void op_shl_w(Machine *m, ReadOperand rop, WriteOperand wop) {
-    // overflow applies to shifts of 1 and where the carry bit and MSB are different
+    // overflow applies to shift of 1 and where the carry bit and MSB are different
     u16 a = *wop.word;
     u8 n = rop.word;
     if (n == 0) {
@@ -404,7 +409,7 @@ void op_shl_w(Machine *m, ReadOperand rop, WriteOperand wop) {
 }
 
 void op_shl_b(Machine *m, ReadOperand rop, WriteOperand wop) {
-    // overflow applies to shifts of 1 and where the carry bit and MSB are different
+    // overflow applies to shift of 1 and where the carry bit and MSB are different
     u8 a = *wop.byte;
     u8 n = rop.byte;
     if (n == 0) {
@@ -509,7 +514,7 @@ void op_shr_b(Machine *m, ReadOperand rop, WriteOperand wop) {
 }
 
 void op_rcl_w(Machine *m, ReadOperand rop, WriteOperand wop) {
-    // overflow applies to rotates of 1 and where the carry bit and MSB are different
+    // overflow applies to rotate of 1 and where the carry bit and MSB are different
     u16 a = *wop.word;
     u8 n = rop.byte & 0x1F;
     if (n == 0) {
@@ -531,7 +536,7 @@ void op_rcl_w(Machine *m, ReadOperand rop, WriteOperand wop) {
 }
 
 void op_rcl_b(Machine *m, ReadOperand rop, WriteOperand wop) {
-    // overflow applies to rotates of 1 and where the carry bit and MSB are different
+    // overflow applies to rotate of 1 and where the carry bit and MSB are different
     u8 a = *wop.byte;
     u8 n = rop.byte & 0x1F;
     if (n == 0) {
@@ -553,7 +558,7 @@ void op_rcl_b(Machine *m, ReadOperand rop, WriteOperand wop) {
 }
 
 void op_rcr_w(Machine *m, ReadOperand rop, WriteOperand wop) {
-    // overflow applies to rotates of 1 and where the carry bit and MSB are different
+    // overflow applies to rotate of 1 and where the carry bit and MSB are different
     u16 a = *wop.word;
     u8 n = rop.byte & 0x1F;
     if (n == 0) {
@@ -575,7 +580,7 @@ void op_rcr_w(Machine *m, ReadOperand rop, WriteOperand wop) {
 }
 
 void op_rcr_b(Machine *m, ReadOperand rop, WriteOperand wop) {
-    // overflow applies to rotates of 1 and where the carry bit and MSB are different
+    // overflow applies to rotate of 1 and where the carry bit and MSB are different
     u16 a = *wop.byte;
     u8 n = rop.byte & 0x1F;
     if (n == 0) {
@@ -597,7 +602,7 @@ void op_rcr_b(Machine *m, ReadOperand rop, WriteOperand wop) {
 }
 
 void op_rol_w(Machine *m, ReadOperand rop, WriteOperand wop) {
-    // overflow applies to rotates of 1 and where the carry bit and MSB are different
+    // overflow applies to rotate of 1 and where the carry bit and MSB are different
     u16 a = *wop.word;
     u8 n = rop.byte & 0x1F;
     if (n == 0) {
@@ -618,7 +623,7 @@ void op_rol_w(Machine *m, ReadOperand rop, WriteOperand wop) {
 }
 
 void op_rol_b(Machine *m, ReadOperand rop, WriteOperand wop) {
-    // overflow applies to rotates of 1 and where the carry bit and MSB are different
+    // overflow applies to rotate of 1 and where the carry bit and MSB are different
     u16 a = *wop.byte;
     u8 n = rop.byte & 0x1F;
     if (n == 0) {
@@ -639,7 +644,7 @@ void op_rol_b(Machine *m, ReadOperand rop, WriteOperand wop) {
 }
 
 void op_ror_w(Machine *m, ReadOperand rop, WriteOperand wop) {
-    // overflow applies to rotates of 1 and where MSB1 and MSB2 are different
+    // overflow applies to rotate of 1 and where MSB1 and MSB2 are different
     u16 a = *wop.word;
     u8 n = rop.byte & 0x1F;
     if (n == 0) {
@@ -660,7 +665,7 @@ void op_ror_w(Machine *m, ReadOperand rop, WriteOperand wop) {
 }
 
 void op_ror_b(Machine *m, ReadOperand rop, WriteOperand wop) {
-    // overflow applies to rotates of 1 and where MSB1 and MSB2 are different
+    // overflow applies to rotate of 1 and where MSB1 and MSB2 are different
     u16 a = *wop.byte;
     u8 n = rop.byte & 0x1F;
     if (n == 0) {
@@ -796,7 +801,7 @@ void op_int(Machine *m, ReadOperand rop, WriteOperand wop) {
     (void) wop;
     u8 interrupt = rop.byte;
 
-    op_pushf(m, (ReadOperand) {0},(WriteOperand) {0});
+    op_pushf(m, (ReadOperand) {0}, (WriteOperand) {0});
     m->cpu->flags.IF = 0;
     m->cpu->flags.TF = 0;
     op_push(m, (ReadOperand) {.word=m->cpu->CS}, (WriteOperand) {0});
@@ -835,7 +840,7 @@ void op_aam(Machine *m, ReadOperand rop, WriteOperand wop) {
     (void) wop;
     u8 imm8 = rop.byte;
 
-    if(imm8 == 0) {
+    if (imm8 == 0) {
         division_error(m);
         return;
     }
@@ -941,7 +946,8 @@ void op_idiv_b(Machine *m, ReadOperand rop, WriteOperand wop) {
     }
 
     s16 dest = (s16) m->cpu->AX;
-    s16 res = dest / src;  // todo???
+    // https://clang.llvm.org/extra/clang-tidy/checks/cppcoreguidelines-narrowing-conversions.html
+    s16 res = dest / src;  // todo??? NOLINT(cppcoreguidelines-narrowing-conversions)
 
     if (res < -0x7F || res > 0x7F) {
         division_error(m);
@@ -955,4 +961,172 @@ void op_idiv_b(Machine *m, ReadOperand rop, WriteOperand wop) {
     m->cpu->flags.ZF = (res & 0xFF) == 0;
     m->cpu->flags.SF = (res & 0x80) == 0x80;
     m->cpu->flags.PF = parity(res);
+}
+
+void op_ret(Machine *m, ReadOperand rop, WriteOperand wop) {
+    (void) rop;
+    (void) wop;
+    op_pop(m, (ReadOperand) {0}, (WriteOperand) {.word=&m->cpu->IP});
+}
+
+void op_cmps_w(Machine *m, ReadOperand rop, WriteOperand wop) {
+    (void) rop;
+    (void) wop;
+    u16 src1 = read_memory_u16(cpu_ds(m->cpu, m->cpu->SI), m->memory);
+    u16 src2 = read_memory_u16(cpu_es(m->cpu, m->cpu->DI), m->memory);
+    sub_word(m, src2, src1, 0);
+
+    if (m->cpu->flags.DF == 0) {
+        m->cpu->SI += 2;
+        m->cpu->DI += 2;
+    } else {
+        m->cpu->SI -= 2;
+        m->cpu->DI -= 2;
+    }
+}
+
+void op_cmps_b(Machine *m, ReadOperand rop, WriteOperand wop) {
+    (void) rop;
+    (void) wop;
+    u8 src1 = read_memory_u8(cpu_ds(m->cpu, m->cpu->SI), m->memory);
+    u8 src2 = read_memory_u8(cpu_es(m->cpu, m->cpu->DI), m->memory);
+    sub_byte(m, src2, src1, 0);
+
+    if (m->cpu->flags.DF == 0) {
+        m->cpu->SI += 1;
+        m->cpu->DI += 1;
+    } else {
+        m->cpu->SI -= 1;
+        m->cpu->DI -= 1;
+    }
+}
+
+void op_lods_w(Machine *m, ReadOperand rop, WriteOperand wop) {
+    (void) rop;
+    (void) wop;
+    m->cpu->AX = read_memory_u16(cpu_ds(m->cpu, m->cpu->SI), m->memory);
+
+    if (m->cpu->flags.DF == 0) {
+        m->cpu->SI += 2;
+        m->cpu->DI += 2;
+    } else {
+        m->cpu->SI -= 2;
+        m->cpu->DI -= 2;
+    }
+}
+
+void op_lods_b(Machine *m, ReadOperand rop, WriteOperand wop) {
+    (void) rop;
+    (void) wop;
+    m->cpu->AL = read_memory_u8(cpu_ds(m->cpu, m->cpu->SI), m->memory);
+
+    if (m->cpu->flags.DF == 0) {
+        m->cpu->SI += 1;
+        m->cpu->DI += 1;
+    } else {
+        m->cpu->SI -= 1;
+        m->cpu->DI -= 1;
+    }
+}
+
+void op_movs_w(Machine *m, ReadOperand rop, WriteOperand wop) {
+    (void) rop;
+    (void) wop;
+    u32 from_addr = cpu_ds(m->cpu, m->cpu->SI);
+    u16 word = read_memory_u16(from_addr, m->memory);
+    u32 to_addr = cpu_es(m->cpu, m->cpu->DI);
+    write_memory_u16(to_addr, m->memory, word);
+
+    if (m->cpu->flags.DF == 0) {
+        m->cpu->SI += 2;
+        m->cpu->DI += 2;
+    } else {
+        m->cpu->SI -= 2;
+        m->cpu->DI -= 2;
+    }
+}
+
+void op_movs_b(Machine *m, ReadOperand rop, WriteOperand wop) {
+    (void) rop;
+    (void) wop;
+    u32 from_addr = cpu_ds(m->cpu, m->cpu->SI);
+    u8 byte = read_memory_u8(from_addr, m->memory);
+    u32 to_addr = cpu_es(m->cpu, m->cpu->DI);
+    write_memory_u8(to_addr, m->memory, byte);
+
+    if (m->cpu->flags.DF == 0) {
+        m->cpu->SI += 1;
+        m->cpu->DI += 1;
+    } else {
+        m->cpu->SI -= 1;
+        m->cpu->DI -= 1;
+    }
+}
+
+void op_scas_w(Machine *m, ReadOperand rop, WriteOperand wop) {
+    (void) rop;
+    (void) wop;
+    u16 src = read_memory_u16(cpu_es(m->cpu, m->cpu->DI), m->memory);
+    u16 dest = m->cpu->AX;
+    sub_word(m, src, dest, 0);
+
+    if (m->cpu->flags.DF == 0) {
+        m->cpu->SI += 2;
+        m->cpu->DI += 2;
+    } else {
+        m->cpu->SI -= 2;
+        m->cpu->DI -= 2;
+    }
+}
+
+void op_scas_b(Machine *m, ReadOperand rop, WriteOperand wop) {
+    (void) rop;
+    (void) wop;
+    u8 src = read_memory_u8(cpu_es(m->cpu, m->cpu->DI), m->memory);
+    u8 dest = m->cpu->AL;
+    sub_byte(m, src, dest, 0);
+
+    if (m->cpu->flags.DF == 0) {
+        m->cpu->SI += 1;
+        m->cpu->DI += 1;
+    } else {
+        m->cpu->SI -= 1;
+        m->cpu->DI -= 1;
+    }
+}
+
+void op_lahf(Machine *m, ReadOperand rop, WriteOperand wop) {
+    (void) rop;
+    (void) wop;
+    m->cpu->AH = m->cpu->flags.word & 0xff;
+}
+
+void op_stos_b(Machine *m, ReadOperand rop, WriteOperand wop) {
+    (void) rop;
+    (void) wop;
+    u32 addr = cpu_es(m->cpu, m->cpu->DI);
+    write_memory_u8(addr, m->memory, m->cpu->AL);
+
+    if (m->cpu->flags.DF == 0) {
+        m->cpu->SI += 1;
+        m->cpu->DI += 1;
+    } else {
+        m->cpu->SI -= 1;
+        m->cpu->DI -= 1;
+    }
+}
+
+void op_stos_w(Machine *m, ReadOperand rop, WriteOperand wop) {
+    (void) rop;
+    (void) wop;
+    u32 addr = cpu_es(m->cpu, m->cpu->DI);
+    write_memory_u16(addr, m->memory, m->cpu->AX);
+
+    if (m->cpu->flags.DF == 0) {
+        m->cpu->SI += 2;
+        m->cpu->DI += 2;
+    } else {
+        m->cpu->SI -= 2;
+        m->cpu->DI -= 2;
+    }
 }
