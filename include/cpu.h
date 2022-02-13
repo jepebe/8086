@@ -115,7 +115,7 @@ u32 cpu_ip(CPU *cpu);
 /// Correctly return an address in the DS segment
 u32 cpu_ds(CPU *cpu, u16 offset);
 
-/// Correctly return an address int the ES segment
+/// Correctly return an address in the ES segment
 u32 cpu_es(CPU *cpu, u16 offset);
 
 /// Returns the SP location as an address in the SS segment

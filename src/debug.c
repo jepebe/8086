@@ -15,14 +15,17 @@ void dump_ram(Machine *machine) {
 void dump_cpu(Machine *machine) {
     CPU *cpu = machine->cpu;
     printf("\x1b[0;33m");
-    printf("[SS:SP] = $%04X:%04X ", cpu->SS, cpu->SP);
-    printf("[CS:IP] = $%04X:%04X ", cpu->CS, cpu->IP);
-    printf("[DS:SI] = $%04X:%04X ", cpu->DS, cpu->SI);
-    printf("[ES:DI] = $%04X:%04X\n", cpu->ES, cpu->DI);
-    printf("[AX] = 0x%04X ", cpu->AX);
-    printf("[BX] = 0x%04X ", cpu->BX);
-    printf("[CX] = 0x%04X ", cpu->CX);
-    printf("[DX] = 0x%04X ", cpu->DX);
+    printf("[SS:SP=$%04X:%04X] ", cpu->SS, cpu->SP);
+    printf("[AX=0x%04X]\n", cpu->AX);
+    printf("[CS:IP=$%04X:%04X] ", cpu->CS, cpu->IP);
+    printf("[BX=0x%04X]\n", cpu->BX);
+    printf("[DS:SI=$%04X:%04X] ", cpu->DS, cpu->SI);
+    printf("[CX=0x%04X]\n", cpu->CX);
+    printf("[ES:DI=$%04X:%04X] ", cpu->ES, cpu->DI);
+    printf("[DX=0x%04X]\n", cpu->DX);
+    printf("[Flags=%s]  ", flags_to_str(cpu->flags));
+    printf("[BP=0x%04X] ", cpu->BP);
+
     printf("\x1b[0m\n");
 }
 
@@ -66,8 +69,8 @@ void cpu_error_marker(Machine *machine, char *file, int line) {
 }
 
 void cpu_note_str(Machine *machine, char *message, char *value) {
-    printf("\x1b[0;31m");
-    printf("[$%05X] Error: ", cpu_ip(machine->cpu));
+    printf("\x1b[0;33m");
+    printf("[$%05X] Note: ", cpu_ip(machine->cpu));
     printf(message, value);
     printf("\x1b[0m\n");
 }
@@ -117,7 +120,7 @@ NO_RETURN void cpu_error_str(Machine *machine, char *message, char *value) {
 
 void memory_peek(Machine *machine, u16 segment) {
     u32 seg = segment << 4;
-    printf("\x1b[0;31m[$%05X] ", seg);
+    printf("\x1b[0;33m[$%05X] ", seg);
     for (int i = 0; i < 16; ++i) {
         u32 addr = seg + i;
         printf("%02X ", machine->memory->ram[addr]);

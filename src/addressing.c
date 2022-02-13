@@ -178,9 +178,12 @@ static u32 displace_address(Machine *machine, MemoryMode mode, u16 displacement)
             addr = cpu_ds(cpu, cpu->DI + displacement);
             break;
         }
+        case BP_SI_PTR: {
+            addr = cpu_ds(cpu, cpu->BP + cpu->SI + displacement);
+            break;
+        }
         case BX_SI_PTR:
         case BX_DI_PTR:
-        case BP_SI_PTR:
         case BP_DI_PTR:
         case BX_PTR:
         default: {
@@ -285,16 +288,34 @@ char *get_segment_register_name(SegREG reg) {
 char *get_memory_mode_table_name(MemoryModeTable mode, DisplacementType disp_type) {
     switch (mode) {
         case BX_SI_PTR:
-            return "[BX+SI]";
+            if(disp_type == NO_DISP) {
+                return "[BX+SI]";
+            }
+            return "[BX+SI+0x%02X]";
         case BX_DI_PTR:
-            return "[BX+DI]";
+            if(disp_type == NO_DISP) {
+                return "[BX+DI]";
+            }
+            return "[BX+DI+0x%02X]";
         case BP_SI_PTR:
-            return "[BP+SI]";
+            if(disp_type == NO_DISP) {
+                return "[BP+SI]";
+            }
+            return "[BP+SI+0x%02X]";
         case BP_DI_PTR:
-            return "[BP+DI]";
+            if(disp_type == NO_DISP) {
+                return "[BP+DI]";
+            }
+            return "[BP+DI+0x%02X]";
         case SI_PTR:
+            if(disp_type == NO_DISP) {
+                return "[SI]";
+            }
             return "[SI+0x%02X]";
         case DI_PTR:
+            if(disp_type == NO_DISP) {
+                return "[DI]";
+            }
             return "[DI+0x%02X]";
         case DIRECT_OR_BP_PTR:
             if (disp_type == NO_DISP) {
@@ -303,7 +324,10 @@ char *get_memory_mode_table_name(MemoryModeTable mode, DisplacementType disp_typ
                 return "[BP+0x%02X]";
             }
         case BX_PTR:
-            return "[BX]";
+            if(disp_type == NO_DISP) {
+                return "[BX]";
+            }
+            return "[BX+0x%02X]";
         default:
             return "Unknown Memory Mode Table1";
     }

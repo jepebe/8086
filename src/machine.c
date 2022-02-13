@@ -58,10 +58,10 @@ void machine_tick(Machine *m) {
         }
         WriteOperand out = decode_write_op(m, opcode.write_op);
         ReadOperand in = decode_read_op(m, opcode.read_op);
-        opcode.op_fn(m, in, out);
 
         disassemble_instruction(m, addr, opcode_num, opcode);
 
+        opcode.op_fn(m, in, out);
     } else {
         cpu_error_marker(m, __FILE__, __LINE__);
         cpu_error_int(m, "opcode 0x%02X not implemented", opcode_num);

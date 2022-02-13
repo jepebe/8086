@@ -17,6 +17,8 @@ typedef enum {
     IB_SE,
     /// Immediate Word (16 bit)
     IW,
+    /// Immediate Opcode
+    ImmOpc,
     /// Register AX
     R_AX,
     /// Register AL
@@ -79,6 +81,8 @@ extern const Opcode opcodes_grp5[010];
 const char *decode_aoc(Machine *machine, AddressOperandCode aoc);
 
 bool has_mod_rm_byte(Opcode opcode);
+
+u8 peek_opcode(Machine *machine);
 
 Opcode fetch_opcode(Machine *machine, u8 opcode_num);
 

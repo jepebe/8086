@@ -58,6 +58,7 @@ const Opcode opcodes[] = {
         [0x50] = {op_push, Implied, R_AX, "PUSH"},
         [0x51] = {op_push, Implied, R_CX, "PUSH"},
         [0x52] = {op_push, Implied, R_DX, "PUSH"},
+        [0x53] = {op_push, Implied, R_BX, "PUSH"},
         [0x57] = {op_push, Implied, R_DI, "PUSH"},
         [0x58] = {op_pop, R_AX, Implied, "POP"},
         [0x59] = {op_pop, R_CX, Implied, "POP"},
@@ -79,6 +80,7 @@ const Opcode opcodes[] = {
         [0x9D] = {op_popf, Implied, Implied, "POPF"},
         [0x9F] = {op_lahf, Implied, Implied, "LAHF"},
 
+        [0xA1] = {op_mov_w, R_AX, IA, "MOV"},
         [0xA2] = {op_mov_b, IA, R_AL, "MOV"},
         [0xA3] = {op_mov_w, IA, R_AX, "MOV"},
         [0xA4] = {op_movs_b, Implied, Implied, "MOVSB"},
@@ -120,8 +122,12 @@ const Opcode opcodes[] = {
         [0xD4] = {op_aam, Implied, IB, "AAM"},
         [0xD5] = {op_aad, Implied, IB, "AAD"},
 
+        [0xE3] = {op_jmp_cxz, Implied, IB, "JCXZ"},
+        [0xE9] = {op_jmp_near_relative, Implied, IW, "JMP"},
         [0xEB] = {op_jmp_short, Implied, IB, "JMP"},
 
+        [0xF2] = {op_repnz, Implied, ImmOpc, "REPNZ"},
+        [0xF3] = {op_rep, Implied, ImmOpc, "REP"},
         [0xF4] = {op_hlt, Implied, Implied, "HLT"},
         [0xF5] = {op_cmc, Implied, Implied, "CMC"},
         [0xF8] = {op_clc, Implied, Implied, "CLC"},
@@ -220,7 +226,7 @@ const Opcode opcodes_grp4[] = {
 const Opcode opcodes_grp5[] = {
         [000] = {op_inc_w, RMW, Implied, "INC"},
         [001] = {op_dec_w, RMW, Implied, "DEC"},
-        [004] = {op_jmp_near, Implied, RMW, "JMP"},
+        [004] = {op_jmp_near_indirect, Implied, RMW, "JMP"},
 };
 
 bool has_mod_rm_byte(Opcode opcode) {
@@ -260,6 +266,59 @@ Opcode fetch_opcode(Machine *machine, u8 opcode_num) {
                 cpu_note_int(machine, "group 2 opcode 0%02o not implemented", grp_idx);
             }
             return grp_opc;
+        }
+        case 0xF2: {
+            u8 next_opcode = peek_opcode(machine);
+
+            switch (next_opcode) {
+                case 0xA4:
+                case 0xA5:
+                case 0xAA:
+                case 0xAB:
+                case 0xAC:
+                case 0xAD: {
+                    // REP
+                    // fixme: undefined behavior?
+                    return opcodes[0xF3];
+                }
+                case 0xA6:
+                case 0xA7:
+                case 0xAE:
+                case 0xAF: {
+                    // REPNZ
+                    return opcodes[opcode_num];
+                }
+
+                default:
+                    cpu_note_int(machine, "REP Undefined Behavior 0x%02X", next_opcode);
+                    return (Opcode) {.op_fn = op_rep_ub, Implied, Implied, "REP UB"};
+            }
+
+        }
+        case 0xF3: {
+            u8 next_opcode = peek_opcode(machine);
+
+            switch (next_opcode) {
+                case 0xA4:
+                case 0xA5:
+                case 0xAA:
+                case 0xAB:
+                case 0xAC:
+                case 0xAD: {
+                    // REP
+                    return opcodes[opcode_num];
+                }
+                case 0xA6:
+                case 0xA7:
+                case 0xAE:
+                case 0xAF: {
+                    // REPZ
+                    return (Opcode) {.op_fn = op_repz, Implied, ImmOpc, "REPZ"};
+                }
+                default:
+                    cpu_note_int(machine, "REP Undefined Behavior 0x%02X", next_opcode);
+                    return (Opcode) {.op_fn = op_rep_ub, Implied, Implied, "REP UB"};
+            }
         }
         case 0xF6: {
             u8 grp_idx = addr_mode.reg_sreg;
@@ -315,6 +374,14 @@ ReadOperand decode_read_op(Machine *machine, AddressOperandCode read_op) {
         case ONE: {
             return (ReadOperand) {.word = 1};
         }
+        case IA: {
+            u16 offset = read_memory_u16(cpu_ip(cpu), mem);
+            cpu->immediate_read = offset;
+            cpu->IP += 2;
+            u32 addr = cpu_ds(cpu, offset);
+            return (ReadOperand) {.word = *(u16 *) &mem->ram[addr]};
+        }
+        case ImmOpc:
         case IB: {
             u8 b = read_memory_u8(cpu_ip(cpu), mem);
             cpu->immediate_read = b;
@@ -341,6 +408,9 @@ ReadOperand decode_read_op(Machine *machine, AddressOperandCode read_op) {
         }
         case R_AL: {
             return (ReadOperand) {.word = cpu->AL};
+        }
+        case R_BX: {
+            return (ReadOperand) {.word = cpu->BX};
         }
         case R_CX: {
             return (ReadOperand) {.word = cpu->CX};
@@ -412,11 +482,12 @@ WriteOperand decode_write_op(Machine *machine, AddressOperandCode write_op) {
             return (WriteOperand) {0};
         }
         case IA: {
+            // The instruction has an immediate word that is an address to a value
             u16 offset = read_memory_u16(cpu_ip(cpu), mem);
             cpu->immediate_write = offset;
             cpu->IP += 2;
             u32 addr = cpu_ds(cpu, offset);
-            return (WriteOperand) {.word = (uint16_t *) &mem->ram[addr]};
+            return (WriteOperand) {.word = (u16 *) &mem->ram[addr]};
         }
         case R_AX: {
             return (WriteOperand) {.word =  &cpu->AX};
@@ -545,6 +616,13 @@ const char *decode_aoc(Machine *machine, AddressOperandCode aoc) {
         return repr;
     }
     switch (aoc) {
+        case ImmOpc: {
+            Opcode opc = opcodes[machine->cpu->immediate_read];
+            if (opc.name) {
+                return opc.name;
+            }
+            return "UNKNOWN";
+        }
         case RB:
         case RW: {
             bool word = false;
@@ -591,6 +669,10 @@ const char *decode_aoc(Machine *machine, AddressOperandCode aoc) {
             cpu_error(machine, "Unhandled AddressOperandCode mode '%d'", aoc);
         }
     }
+}
+
+u8 peek_opcode(Machine *machine) {
+    return machine->memory->ram[cpu_ip(machine->cpu)];
 }
 
 

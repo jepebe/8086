@@ -76,3 +76,7 @@ add_test("Testcase STRINGS" test_strings)
 add_executable(test_sub tests/test_sub.c)
 target_link_libraries(test_sub 80x86)
 add_test("Testcase SUB" test_sub)
+
+add_executable(test_rep tests/test_rep.c)
+target_link_libraries(test_rep 80x86)
+add_test("Testcase REP" test_rep)

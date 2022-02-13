@@ -237,7 +237,12 @@ void op_jmp_short(Machine *m, ReadOperand rop, WriteOperand wop) {
     m->cpu->IP += (s8) rop.byte;
 }
 
-void op_jmp_near(Machine *m, ReadOperand rop, WriteOperand wop) {
+void op_jmp_near_relative(Machine *m, ReadOperand rop, WriteOperand wop) {
+    (void) wop;
+    m->cpu->IP += (s16) rop.word;
+}
+
+void op_jmp_near_indirect(Machine *m, ReadOperand rop, WriteOperand wop) {
     (void) wop;
     m->cpu->IP = rop.word;
 }
@@ -245,6 +250,13 @@ void op_jmp_near(Machine *m, ReadOperand rop, WriteOperand wop) {
 void op_jz(Machine *m, ReadOperand rop, WriteOperand wop) {
     (void) wop;
     if (m->cpu->flags.ZF == 1) {
+        m->cpu->IP += (s8) rop.byte;
+    }
+}
+
+void op_jmp_cxz(Machine *m, ReadOperand rop, WriteOperand wop) {
+    (void) wop;
+    if (m->cpu->CX == 0) {
         m->cpu->IP += (s8) rop.byte;
     }
 }
@@ -1004,28 +1016,26 @@ void op_cmps_b(Machine *m, ReadOperand rop, WriteOperand wop) {
 void op_lods_w(Machine *m, ReadOperand rop, WriteOperand wop) {
     (void) rop;
     (void) wop;
-    m->cpu->AX = read_memory_u16(cpu_ds(m->cpu, m->cpu->SI), m->memory);
+    u32 addr = cpu_ds(m->cpu, m->cpu->SI);
+    m->cpu->AX = read_memory_u16(addr, m->memory);
 
     if (m->cpu->flags.DF == 0) {
         m->cpu->SI += 2;
-        m->cpu->DI += 2;
     } else {
         m->cpu->SI -= 2;
-        m->cpu->DI -= 2;
     }
 }
 
 void op_lods_b(Machine *m, ReadOperand rop, WriteOperand wop) {
     (void) rop;
     (void) wop;
-    m->cpu->AL = read_memory_u8(cpu_ds(m->cpu, m->cpu->SI), m->memory);
+    u32 addr = cpu_ds(m->cpu, m->cpu->SI);
+    m->cpu->AL = read_memory_u8(addr, m->memory);
 
     if (m->cpu->flags.DF == 0) {
         m->cpu->SI += 1;
-        m->cpu->DI += 1;
     } else {
         m->cpu->SI -= 1;
-        m->cpu->DI -= 1;
     }
 }
 
@@ -1071,10 +1081,8 @@ void op_scas_w(Machine *m, ReadOperand rop, WriteOperand wop) {
     sub_word(m, src, dest, 0);
 
     if (m->cpu->flags.DF == 0) {
-        m->cpu->SI += 2;
         m->cpu->DI += 2;
     } else {
-        m->cpu->SI -= 2;
         m->cpu->DI -= 2;
     }
 }
@@ -1087,10 +1095,8 @@ void op_scas_b(Machine *m, ReadOperand rop, WriteOperand wop) {
     sub_byte(m, src, dest, 0);
 
     if (m->cpu->flags.DF == 0) {
-        m->cpu->SI += 1;
         m->cpu->DI += 1;
     } else {
-        m->cpu->SI -= 1;
         m->cpu->DI -= 1;
     }
 }
@@ -1108,10 +1114,8 @@ void op_stos_b(Machine *m, ReadOperand rop, WriteOperand wop) {
     write_memory_u8(addr, m->memory, m->cpu->AL);
 
     if (m->cpu->flags.DF == 0) {
-        m->cpu->SI += 1;
         m->cpu->DI += 1;
     } else {
-        m->cpu->SI -= 1;
         m->cpu->DI -= 1;
     }
 }
@@ -1123,10 +1127,55 @@ void op_stos_w(Machine *m, ReadOperand rop, WriteOperand wop) {
     write_memory_u16(addr, m->memory, m->cpu->AX);
 
     if (m->cpu->flags.DF == 0) {
-        m->cpu->SI += 2;
         m->cpu->DI += 2;
     } else {
-        m->cpu->SI -= 2;
         m->cpu->DI -= 2;
     }
+}
+
+void op_rep(Machine *m, ReadOperand rop, WriteOperand wop) {
+    (void) rop;
+    (void) wop;
+    (void) m;
+    Opcode opc = fetch_opcode(m, rop.byte);
+
+    while (m->cpu->CX != 0) {
+        opc.op_fn(m, (ReadOperand) {0}, (WriteOperand) {0});
+        --m->cpu->CX;
+    }
+}
+
+void op_repz(Machine *m, ReadOperand rop, WriteOperand wop) {
+    (void) rop;
+    (void) wop;
+    (void) m;
+    Opcode opc = fetch_opcode(m, rop.byte);
+
+    while (m->cpu->CX != 0) {
+        opc.op_fn(m, (ReadOperand) {0}, (WriteOperand) {0});
+        --m->cpu->CX;
+
+        if (!m->cpu->flags.ZF)
+            break;
+    }
+}
+
+void op_repnz(Machine *m, ReadOperand rop, WriteOperand wop) {
+    (void) rop;
+    (void) wop;
+    (void) m;
+    Opcode opc = fetch_opcode(m, rop.byte);
+
+    while (m->cpu->CX != 0) {
+        opc.op_fn(m, (ReadOperand) {0}, (WriteOperand) {0});
+        --m->cpu->CX;
+        if (m->cpu->flags.ZF)
+            break;
+    }
+}
+
+void op_rep_ub(Machine *m, ReadOperand rop, WriteOperand wop) {
+    (void) rop;
+    (void) wop;
+    (void) m;
 }
