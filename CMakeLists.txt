@@ -12,13 +12,23 @@ else ()
 endif ()
 
 set(SOURCES
-    src/addressing.c
-    src/cpu.c
-    src/debug.c
-    src/machine.c
-    src/memory.c
-    src/opcodes.c
-)
+        src/addressing.c
+        src/cpu.c
+        src/debug.c
+        src/machine.c
+        src/memory.c
+        src/opcodes.c
+        src/instructions/support.c
+        src/instructions/arithmetic.c
+        src/instructions/bitwise.c
+        src/instructions/control.c
+        src/instructions/jumps.c
+        src/instructions/movs.c
+        src/instructions/rotates.c
+        src/instructions/shifts.c
+        src/instructions/stack.c
+        src/instructions/strings.c
+        )
 
 
 include_directories(include/)
@@ -80,3 +90,7 @@ add_test("Testcase SUB" test_sub)
 add_executable(test_rep tests/test_rep.c)
 target_link_libraries(test_rep 80x86)
 add_test("Testcase REP" test_rep)
+
+add_executable(test_segpr tests/test_segpr.c)
+target_link_libraries(test_segpr 80x86)
+add_test("Testcase SEGPR" test_segpr)

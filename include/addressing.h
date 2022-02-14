@@ -2,12 +2,14 @@
 
 #include "80x86.h"
 #include "machine.h"
+#include "debug.h"
 
 typedef struct {
     union {
-        u16 word;
-        u8 byte;
+        u16 *word;
+        u8 *byte;
     };
+    u32 addr;
 } ReadOperand;
 
 typedef struct {
@@ -85,9 +87,9 @@ ReadOperand get_read_memory(Machine *machine, MemoryMode mode);
 
 WriteOperand get_write_memory(Machine *machine, MemoryMode mode);
 
-char *get_register_name(REG reg);
+MemoryMnemonic get_register_name(REG reg);
 
-char *get_segment_register_name(SegREG reg);
+MemoryMnemonic get_segment_register_name(SegREG reg);
 
-char *get_memory_mode_table_name(MemoryModeTable mode, DisplacementType disp_type);
+MemoryMnemonic get_memory_mode_name(MemoryModeTable mode, DisplacementType disp_type);
 

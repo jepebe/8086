@@ -24,7 +24,26 @@ void dump_cpu(Machine *machine) {
     printf("[ES:DI=$%04X:%04X] ", cpu->ES, cpu->DI);
     printf("[DX=0x%04X]\n", cpu->DX);
     printf("[Flags=%s]  ", flags_to_str(cpu->flags));
-    printf("[BP=0x%04X] ", cpu->BP);
+    printf("[BP=0x%04X]\n", cpu->BP);
+    printf("[Segment override=");
+    switch(machine->cpu->segment_override) {
+        case DEFAULT_SEGMENT:
+            printf("Default");
+            break;
+        case CS_SEGMENT:
+            printf("CS");
+            break;
+        case DS_SEGMENT:
+            printf("DS");
+            break;
+        case ES_SEGMENT:
+            printf("ES");
+            break;
+        case SS_SEGMENT:
+            printf("SS");
+            break;
+    }
+    printf("]");
 
     printf("\x1b[0m\n");
 }
@@ -61,6 +80,14 @@ void cpu_note_int(Machine *machine, char *message, int value) {
     printf(message, value);
     printf("\x1b[0m\n");
 }
+
+void cpu_note_u32(Machine *machine, char *message, u32 value) {
+    printf("\x1b[0;33m");
+    printf("[$%05X] Note: ", cpu_ip(machine->cpu));
+    printf(message, value);
+    printf("\x1b[0m\n");
+}
+
 
 void cpu_error_marker(Machine *machine, char *file, int line) {
     printf("\x1b[0;33m");
@@ -144,3 +171,4 @@ void print_flags(Machine *machine) {
     printf("%s", flags);
     printf("]\x1b[0m\n");
 }
+

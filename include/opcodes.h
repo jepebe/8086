@@ -3,6 +3,7 @@
 #include "addressing.h"
 #include "cpu.h"
 #include "machine.h"
+#include "debug.h"
 
 typedef enum {
     /// Implied
@@ -49,6 +50,8 @@ typedef enum {
     R_SI,
     /// Register DI - Destination Index
     R_DI,
+    /// Memory Word (Pointer to memory)
+    MW,
     /// Register or Memory Byte
     RMB,
     /// Register or Memory Word
@@ -78,9 +81,11 @@ extern const Opcode opcodes_grp3b[010];
 extern const Opcode opcodes_grp4[010];
 extern const Opcode opcodes_grp5[010];
 
-const char *decode_aoc(Machine *machine, AddressOperandCode aoc);
+MemoryMnemonic decode_aoc(Machine *machine, AddressOperandCode aoc);
 
 bool has_mod_rm_byte(Opcode opcode);
+
+bool is_prefix_opcode(u8 opcode);
 
 u8 peek_opcode(Machine *machine);
 

@@ -19,6 +19,21 @@ typedef enum {
     WORD
 } OperandSize;
 
+typedef enum {
+    DEFAULT_SEGMENT,
+    CS_SEGMENT,
+    DS_SEGMENT,
+    ES_SEGMENT,
+    SS_SEGMENT
+} SegmentOverride;
+
+typedef enum {
+    NO_REPEAT,
+    REP,
+    REPZ,
+    REPNZ
+} Repeat;
+
 typedef union {
     u16 word; // status register
     struct {
@@ -99,8 +114,21 @@ typedef struct {
 
     AddrMode addr_mode;
     bool halted;
-    u16 immediate_write;
-    u16 immediate_read;
+
+    union {
+        u16 word;
+        u8 byte;
+    } immediate_write;
+
+    union {
+        u16 word;
+        u8 byte;
+    } immediate_read;
+
+    s16 displacement;
+
+    SegmentOverride segment_override;
+    Repeat repeat;
 } CPU;
 
 
@@ -112,11 +140,17 @@ void cpu_reset(CPU *cpu);
 /// Correctly return the IP in the CS segment
 u32 cpu_ip(CPU *cpu);
 
-/// Correctly return an address in the DS segment
-u32 cpu_ds(CPU *cpu, u16 offset);
-
-/// Correctly return an address in the ES segment
-u32 cpu_es(CPU *cpu, u16 offset);
-
 /// Returns the SP location as an address in the SS segment
 u32 cpu_sp(CPU *cpu);
+
+/// Correctly return an address in the CS segment
+//u32 cpu_cs(CPU *cpu, u16 offset);
+
+/// Correctly return an address in the DS segment
+//u32 cpu_ds(CPU *cpu, u16 offset);
+
+/// Correctly return an address in the ES segment
+//u32 cpu_es(CPU *cpu, u16 offset);
+
+/// Returns the SP location as an address in the SS segment
+//u32 cpu_ss(CPU *cpu, u16 offset);

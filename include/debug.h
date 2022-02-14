@@ -3,11 +3,29 @@
 #include "80x86.h"
 #include "machine.h"
 
+typedef enum {
+    MMT_DEFAULT = 0,
+    MMT_POINTER = 1,
+    MMT_SEGMENT_OVERRIDABLE = 2,
+    MMT_ADDRESS = 4,
+    MMT_VALUE_BYTE = 8,
+    MMT_VALUE_WORD = 16,
+    MMT_DISPLACEMENT_BYTE = 32,
+    MMT_DISPLACEMENT_WORD = 64,
+    MMT_EMPTY = 128,
+} MemoryMnemonicType;
+
+typedef struct {
+    MemoryMnemonicType type;
+    const char *name;
+} MemoryMnemonic;
+
 char *flags_to_str(Flags flags);
 
 NO_RETURN void cpu_error(Machine *machine, char *message, int value);
 
 void cpu_note_int(Machine *machine, char *message, int value);
+void cpu_note_u32(Machine *machine, char *message, u32 value);
 
 void cpu_note_str(Machine *machine, char *message, char *value);
 

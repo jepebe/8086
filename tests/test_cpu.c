@@ -96,24 +96,25 @@ void test_result(Tester *tester) {
     test_section("Operand Union");
 
     ReadOperand op;
-    op.word = 0xDECA;
+    u16 temp = 0xDECA;
+    op.word = &temp;
 
-    test_u64(tester, op.word, 0xDECA, "0xDECA");
-    test_u64(tester, op.byte, 0xCA, "0xCA");
+    test_u64(tester, *op.word, 0xDECA, "0xDECA");
+    test_u64(tester, *op.byte, 0xCA, "0xCA");
 
-    op.byte = 0xAD;
-    test_u64(tester, op.word, 0xDEAD, "0xDEAD");
-    test_u64(tester, op.byte, 0xAD, "0xAD");
+    temp = (temp & 0xFF00) | 0x00AD;
+    test_u64(tester, *op.word, 0xDEAD, "0xDEAD");
+    test_u64(tester, *op.byte, 0xAD, "0xAD");
 
-    op.word = 0x00FF;
-    op.byte++;
-    test_u64(tester, op.word, 0x0000, "0x0000");
-    test_u64(tester, op.byte, 0x00, "0x00");
+    temp = 0x00FF;
+    (*op.byte)++;
+    test_u64(tester, *op.word, 0x0000, "0x0000");
+    test_u64(tester, *op.byte, 0x00, "0x00");
 
-    op.word = 0x00FF;
-    op.word++;
-    test_u64(tester, op.word, 0x0100, "0x0100");
-    test_u64(tester, op.byte, 0x00, "0x00");
+    temp = 0x00FF;
+    (*op.word)++;
+    test_u64(tester, *op.word, 0x0100, "0x0100");
+    test_u64(tester, *op.byte, 0x00, "0x00");
 
 }
 
@@ -192,13 +193,18 @@ void test_segments(Tester *tester) {
 
     CPU cpu;
     cpu_reset(&cpu);
+    Memory memory = {0};
+    Machine machine = {.cpu = &cpu, .memory = &memory};
 
     test_u64(tester, cpu_ip(&cpu), 0xFFFF0, "Start vector");
     cpu.IP++;
     test_u64(tester, cpu_ip(&cpu), 0xFFFF1, "Next IP");
-    test_u64(tester, cpu_ds(&cpu, 0xFF), 0x000FF, "Data segment");
+
+    u32 addr = effective_addr(&machine, 0xFF, DS_SEGMENT);
+    test_u64(tester, addr, 0x000FF, "Data segment");
     cpu.DS = 0xA000;
-    test_u64(tester, cpu_ds(&cpu, 0xFF), 0xA00FF, "Data segment at 0xA000");
+    addr = effective_addr(&machine, 0xFF, DS_SEGMENT);
+    test_u64(tester, addr, 0xA00FF, "Data segment at 0xA000");
 }
 
 

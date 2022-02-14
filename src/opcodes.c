@@ -35,11 +35,13 @@ const Opcode opcodes[] = {
         [0x23] = {op_and_w, RW, RMW, "AND"},
         [0x24] = {op_and_b, R_AL, IB, "AND"},
         [0x25] = {op_and_w, R_AX, IW, "AND"},
+        [0x26] = {op_es, Implied, Implied, "ES:"},
         [0x28] = {op_sub_b, RMB, RB, "SUB"},
         [0x29] = {op_sub_w, RMW, RW, "SUB"},
         [0x2A] = {op_sub_b, RB, RMB, "SUB"},
         [0x2B] = {op_sub_w, RW, RMW, "SUB"},
         [0x2C] = {op_sub_b, R_AL, IB, "SUB"},
+        [0x2E] = {op_cs, Implied, Implied, "CS:"},
 
         [0x30] = {op_xor_b, RMB, RB, "XOR"},
         [0x31] = {op_xor_w, RMW, RW, "XOR"},
@@ -47,6 +49,7 @@ const Opcode opcodes[] = {
         [0x33] = {op_xor_w, RW, RMW, "XOR"},
         [0x34] = {op_xor_b, R_AL, IB, "XOR"},
         [0x35] = {op_xor_w, R_AX, IW, "XOR"},
+        [0x36] = {op_ss, Implied, Implied, "SS:"},
         [0x38] = {op_cmp_b, RMB, RB, "CMP"},
         [0x39] = {op_cmp_w, RMW, RW, "CMP"},
         [0x3A] = {op_cmp_b, RB, RMB, "CMP"},
@@ -73,6 +76,7 @@ const Opcode opcodes[] = {
         [0x89] = {op_mov_w, RMW, RW, "MOV"},
         [0x8B] = {op_mov_w, RW, RMW, "MOV"},
         [0x8C] = {op_mov_w, RMW, SR, "MOV"},
+        [0x8D] = {op_lea, RW, RMW, "LEA"},
         [0x8E] = {op_mov_w, SR, RMW, "MOV"},
 
         [0x90] = {op_nop, Implied, Implied, "NOP"},
@@ -113,6 +117,7 @@ const Opcode opcodes[] = {
         [0xBF] = {op_mov_w, R_DI, IW, "MOV"},
 
         [0xC3] = {op_ret, Implied, Implied, "RET"},
+        [0xC4] = {op_les, RW, RMW, "LES"},
         [0xC6] = {op_mov_b, RMB, IB, "MOV"},
         [0xC7] = {op_mov_w, RMW, IW, "MOV"},
         [0xCD] = {op_int, Implied, IB, "INT"},
@@ -121,13 +126,14 @@ const Opcode opcodes[] = {
 
         [0xD4] = {op_aam, Implied, IB, "AAM"},
         [0xD5] = {op_aad, Implied, IB, "AAD"},
+        [0xD7] = {op_xlat, Implied, Implied, "XLAT"},
 
         [0xE3] = {op_jmp_cxz, Implied, IB, "JCXZ"},
         [0xE9] = {op_jmp_near_relative, Implied, IW, "JMP"},
         [0xEB] = {op_jmp_short, Implied, IB, "JMP"},
 
-        [0xF2] = {op_repnz, Implied, ImmOpc, "REPNZ"},
-        [0xF3] = {op_rep, Implied, ImmOpc, "REP"},
+        [0xF2] = {op_repnz, Implied, Implied, "REPNZ"},
+        [0xF3] = {op_repz, Implied, Implied, "REPZ"},
         [0xF4] = {op_hlt, Implied, Implied, "HLT"},
         [0xF5] = {op_cmc, Implied, Implied, "CMC"},
         [0xF8] = {op_clc, Implied, Implied, "CLC"},
@@ -226,6 +232,7 @@ const Opcode opcodes_grp4[] = {
 const Opcode opcodes_grp5[] = {
         [000] = {op_inc_w, RMW, Implied, "INC"},
         [001] = {op_dec_w, RMW, Implied, "DEC"},
+        [002] = {op_call, Implied, RMW, "CALL"},
         [004] = {op_jmp_near_indirect, Implied, RMW, "JMP"},
 };
 
@@ -266,59 +273,6 @@ Opcode fetch_opcode(Machine *machine, u8 opcode_num) {
                 cpu_note_int(machine, "group 2 opcode 0%02o not implemented", grp_idx);
             }
             return grp_opc;
-        }
-        case 0xF2: {
-            u8 next_opcode = peek_opcode(machine);
-
-            switch (next_opcode) {
-                case 0xA4:
-                case 0xA5:
-                case 0xAA:
-                case 0xAB:
-                case 0xAC:
-                case 0xAD: {
-                    // REP
-                    // fixme: undefined behavior?
-                    return opcodes[0xF3];
-                }
-                case 0xA6:
-                case 0xA7:
-                case 0xAE:
-                case 0xAF: {
-                    // REPNZ
-                    return opcodes[opcode_num];
-                }
-
-                default:
-                    cpu_note_int(machine, "REP Undefined Behavior 0x%02X", next_opcode);
-                    return (Opcode) {.op_fn = op_rep_ub, Implied, Implied, "REP UB"};
-            }
-
-        }
-        case 0xF3: {
-            u8 next_opcode = peek_opcode(machine);
-
-            switch (next_opcode) {
-                case 0xA4:
-                case 0xA5:
-                case 0xAA:
-                case 0xAB:
-                case 0xAC:
-                case 0xAD: {
-                    // REP
-                    return opcodes[opcode_num];
-                }
-                case 0xA6:
-                case 0xA7:
-                case 0xAE:
-                case 0xAF: {
-                    // REPZ
-                    return (Opcode) {.op_fn = op_repz, Implied, ImmOpc, "REPZ"};
-                }
-                default:
-                    cpu_note_int(machine, "REP Undefined Behavior 0x%02X", next_opcode);
-                    return (Opcode) {.op_fn = op_rep_ub, Implied, Implied, "REP UB"};
-            }
         }
         case 0xF6: {
             u8 grp_idx = addr_mode.reg_sreg;
@@ -372,57 +326,59 @@ ReadOperand decode_read_op(Machine *machine, AddressOperandCode read_op) {
             return (ReadOperand) {0};
         }
         case ONE: {
-            return (ReadOperand) {.word = 1};
+            cpu->immediate_read.word = 1;
+            return (ReadOperand) {.word = (u16*) &cpu->immediate_read.word};
         }
         case IA: {
             u16 offset = read_memory_u16(cpu_ip(cpu), mem);
-            cpu->immediate_read = offset;
+            cpu->immediate_read.word = offset;
             cpu->IP += 2;
-            u32 addr = cpu_ds(cpu, offset);
-            return (ReadOperand) {.word = *(u16 *) &mem->ram[addr]};
+            u32 addr = effective_addr(machine, offset, DS_SEGMENT);
+            return (ReadOperand) {.word = (u16 *) &mem->ram[addr]};
         }
-        case ImmOpc:
         case IB: {
-            u8 b = read_memory_u8(cpu_ip(cpu), mem);
-            cpu->immediate_read = b;
+            u32 addr = cpu_ip(cpu);
+            u8 b = read_memory_u8(addr, mem);
+            cpu->immediate_read.byte = b;
             cpu->IP += 1;
-            return (ReadOperand) {.byte = b};
+            return (ReadOperand) {.byte = (u8 *) &cpu->immediate_read.byte};
         }
         case IB_SE: {
-            u8 lo_byte = read_memory_u8(cpu_ip(cpu), mem);
+            u32 addr = cpu_ip(cpu);
+            u8 lo_byte = read_memory_u8(addr, mem);
             u8 hi_byte = ((lo_byte & 0x80) == 0x80) ? 0xFF : 0x00;
 
             u16 word = (hi_byte << 8) | lo_byte;
-            cpu->immediate_read = word;
+            cpu->immediate_read.word = word;
             cpu->IP += 1;
-            return (ReadOperand) {.word = word};
+            return (ReadOperand) {.word = (u16 *) &cpu->immediate_read.word};
         }
         case IW: {
             u16 w = read_memory_u16(cpu_ip(cpu), mem);
-            cpu->immediate_read = w;
+            cpu->immediate_read.word = w;
             cpu->IP += 2;
-            return (ReadOperand) {.word = w};
+            return (ReadOperand) {.word = (u16 *) &cpu->immediate_read.word};
         }
         case R_AX: {
-            return (ReadOperand) {.word = cpu->AX};
+            return (ReadOperand) {.word = &cpu->AX};
         }
         case R_AL: {
-            return (ReadOperand) {.word = cpu->AL};
+            return (ReadOperand) {.byte = &cpu->AL};
         }
         case R_BX: {
-            return (ReadOperand) {.word = cpu->BX};
+            return (ReadOperand) {.word = &cpu->BX};
         }
         case R_CX: {
-            return (ReadOperand) {.word = cpu->CX};
+            return (ReadOperand) {.word = &cpu->CX};
         }
         case R_CL: {
-            return (ReadOperand) {.word = cpu->CL};
+            return (ReadOperand) {.byte = &cpu->CL};
         }
         case R_DX: {
-            return (ReadOperand) {.word = cpu->DX};
+            return (ReadOperand) {.word = &cpu->DX};
         }
         case R_DI: {
-            return (ReadOperand) {.word = cpu->DI};
+            return (ReadOperand) {.word = &cpu->DI};
         }
         case RB:
         case RW: {
@@ -484,9 +440,9 @@ WriteOperand decode_write_op(Machine *machine, AddressOperandCode write_op) {
         case IA: {
             // The instruction has an immediate word that is an address to a value
             u16 offset = read_memory_u16(cpu_ip(cpu), mem);
-            cpu->immediate_write = offset;
+            cpu->immediate_write.word = offset;
             cpu->IP += 2;
-            u32 addr = cpu_ds(cpu, offset);
+            u32 addr = effective_addr(machine, offset, DS_SEGMENT);
             return (WriteOperand) {.word = (u16 *) &mem->ram[addr]};
         }
         case R_AX: {
@@ -584,45 +540,46 @@ WriteOperand decode_write_op(Machine *machine, AddressOperandCode write_op) {
     }
 }
 
-static const char *AOC_TABLE[] = {
-        [Implied] = "",
-        [ONE] = "1",
-        [IA] = "IA=0x%04X",
-        [IB] = "IB=0x%02X",
-        [IB_SE] = "IBSE=0x%02X",
-        [IW] = "IW=0x%04X",
-        [R_AX] = "AX",
-        [R_AL] = "AL",
-        [R_AH] = "AH",
-        [R_BX] = "BX",
-        [R_BL] = "BL",
-        [R_CX] = "CX",
-        [R_CL] = "CL",
-        [R_CH] = "CH",
-        [R_DX] = "DX",
-        [R_DL] = "DL",
-        [R_DH] = "DH",
-        [R_BP] = "BP",
-        [R_SP] = "SP",
-        [R_SI] = "SI",
-        [R_DI] = "DI",
+static const MemoryMnemonic AOC_TABLE[AOC_COUNT] = {
+        [Implied] = {MMT_EMPTY, ""},
+        [ONE] = {.name ="1"},
+        [IA] = {MMT_POINTER | MMT_ADDRESS | MMT_SEGMENT_OVERRIDABLE, "$"},
+//        [IAQ] = {MMT_POINTER | MMT_ADDRESS | MMT_SEGMENT_OVERRIDABLE, "$"},
+        [IB] = {MMT_VALUE_BYTE, "IB="},
+        [IB_SE] = {MMT_VALUE_BYTE, "IBSE="},
+        [IW] = {MMT_VALUE_WORD, "IW="},
+        [R_AX] = {.name ="AX"},
+        [R_AL] = {.name ="AL"},
+        [R_AH] = {.name ="AH"},
+        [R_BX] = {.name ="BX"},
+        [R_BL] = {.name ="BL"},
+        [R_CX] = {.name ="CX"},
+        [R_CL] = {.name ="CL"},
+        [R_CH] = {.name ="CH"},
+        [R_DX] = {.name ="DX"},
+        [R_DL] = {.name ="DL"},
+        [R_DH] = {.name ="DH"},
+        [R_BP] = {.name ="BP"},
+        [R_SP] = {.name ="SP"},
+        [R_SI] = {.name ="SI"},
+        [R_DI] = {.name ="DI"},
 };
 
-const char *decode_aoc(Machine *machine, AddressOperandCode aoc) {
+MemoryMnemonic decode_aoc(Machine *machine, AddressOperandCode aoc) {
     CPU *cpu = machine->cpu;
 
-    const char *repr = AOC_TABLE[aoc];
-    if (repr) {
+    MemoryMnemonic repr = AOC_TABLE[aoc];
+    if (repr.name) {
         return repr;
     }
     switch (aoc) {
-        case ImmOpc: {
-            Opcode opc = opcodes[machine->cpu->immediate_read];
-            if (opc.name) {
-                return opc.name;
-            }
-            return "UNKNOWN";
-        }
+//        case ImmOpc: {
+//            Opcode opc = opcodes[machine->cpu->immediate_read.byte];
+//            if (opc.name) {
+//                return (MemoryMnemonic ) {.name=opc.name};
+//            }
+//            return  (MemoryMnemonic ) {.name="Unknown Immediate Opcode"};
+//        }
         case RB:
         case RW: {
             bool word = false;
@@ -641,15 +598,15 @@ const char *decode_aoc(Machine *machine, AddressOperandCode aoc) {
             u8 mode = cpu->addr_mode.mode;
             if (mode == 0) {
                 MemoryModeTable mem_mode = cpu->addr_mode.reg_mem;
-                return get_memory_mode_table_name(mem_mode, NO_DISP);
+                return get_memory_mode_name(mem_mode, NO_DISP);
 
             } else if (mode == 1) {
                 MemoryModeTable mem_mode = cpu->addr_mode.reg_mem;
-                return get_memory_mode_table_name(mem_mode, BYTE_DISP);
+                return get_memory_mode_name(mem_mode, BYTE_DISP);
 
             } else if (mode == 2) {
                 MemoryModeTable mem_mode = cpu->addr_mode.reg_mem;
-                return get_memory_mode_table_name(mem_mode, WORD_DISP);
+                return get_memory_mode_name(mem_mode, WORD_DISP);
 
             } else if (mode == 3) {
                 REG reg = (word << 3) | cpu->addr_mode.reg_mem;
