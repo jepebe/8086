@@ -12,7 +12,8 @@ typedef enum {
     MMT_VALUE_WORD = 16,
     MMT_DISPLACEMENT_BYTE = 32,
     MMT_DISPLACEMENT_WORD = 64,
-    MMT_EMPTY = 128,
+    MMT_ADDRESS_32BIT = 128,
+    MMT_EMPTY = 256,
 } MemoryMnemonicType;
 
 typedef struct {
@@ -48,3 +49,5 @@ void cpu_instruction_context(Machine *machine);
 void print_stack(Machine *machine);
 
 void print_flags(Machine *machine);
+
+void print_cpu(Machine *machine);

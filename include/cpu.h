@@ -115,15 +115,8 @@ typedef struct {
     AddrMode addr_mode;
     bool halted;
 
-    union {
-        u16 word;
-        u8 byte;
-    } immediate_write;
-
-    union {
-        u16 word;
-        u8 byte;
-    } immediate_read;
+    MixedValue immediate_write;
+    MixedValue immediate_read;
 
     s16 displacement;
 

@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include "machine.h"
 #include "opcodes.h"
 #include "debug.h"
@@ -27,9 +28,46 @@ static char const *segment_prefix_as_str(SegmentOverride segment_override) {
     }
 }
 
+static void print_memory_mnemonic(Machine *machine, MemoryMnemonic mm, MixedValue imm, char const* prefix) {
+    if (mm.name[0] != '\0') {
+        if((mm.type & MMT_POINTER) == MMT_POINTER)
+            printf("[");
+
+        if((mm.type & MMT_SEGMENT_OVERRIDABLE) == MMT_SEGMENT_OVERRIDABLE)
+            printf("%s", prefix);
+
+        printf("%s", mm.name);
+
+        if((mm.type & MMT_DISPLACEMENT_WORD) == MMT_DISPLACEMENT_WORD)
+            printf("%d",  machine->cpu->displacement);
+
+        if((mm.type & MMT_DISPLACEMENT_BYTE) == MMT_DISPLACEMENT_BYTE)
+            printf("%d",  machine->cpu->displacement);
+
+        if((mm.type & MMT_VALUE_WORD) == MMT_VALUE_WORD)
+            printf("0x%04X",  imm.word);
+
+        if((mm.type & MMT_VALUE_BYTE) == MMT_VALUE_BYTE)
+            printf("0x%02X",  imm.byte);
+
+        if((mm.type & MMT_ADDRESS) == MMT_ADDRESS)
+            printf("%04X",  imm.word);
+
+        if((mm.type & MMT_ADDRESS_32BIT) == MMT_ADDRESS_32BIT) {
+            printf("%04X:",  machine->cpu->immediate_write.word);
+            printf("%04X",  machine->cpu->immediate_read.word);
+        }
+
+        if((mm.type & MMT_POINTER) == MMT_POINTER)
+            printf("]");
+    }
+}
+
 static void disassemble_instruction(Machine *machine, u32 addr, u8 opc, Opcode opcode) {
     printf("[$%05X] ", addr);
     printf("[%02X] ", opc); // Opcode number
+
+    //print_cpu(machine);
 
     if(machine->cpu->repeat != NO_REPEAT) {
         switch(machine->cpu->repeat) {
@@ -53,27 +91,7 @@ static void disassemble_instruction(Machine *machine, u32 addr, u8 opc, Opcode o
 
     char const *prefix = segment_prefix_as_str(machine->cpu->segment_override);
 
-    if (w.name[0] != '\0') {
-        if((w.type & MMT_POINTER) == MMT_POINTER)
-            printf("[");
-
-        if((w.type & MMT_SEGMENT_OVERRIDABLE) == MMT_SEGMENT_OVERRIDABLE)
-            printf("%s", prefix);
-
-        printf("%s", w.name);
-
-        if((w.type & MMT_VALUE_WORD) == MMT_VALUE_WORD)
-            printf("0x%04X",  machine->cpu->immediate_write.word);
-
-        if((w.type & MMT_VALUE_BYTE) == MMT_VALUE_BYTE)
-            printf("0x%02X",  machine->cpu->immediate_write.byte);
-
-        if((w.type & MMT_ADDRESS) == MMT_ADDRESS)
-            printf("%04X",  machine->cpu->immediate_write.word);
-
-        if((w.type & MMT_POINTER) == MMT_POINTER)
-            printf("]");
-    }
+    print_memory_mnemonic(machine, w, machine->cpu->immediate_write, prefix);
 
     MemoryMnemonic r = decode_aoc(machine, opcode.read_op);
 
@@ -81,33 +99,7 @@ static void disassemble_instruction(Machine *machine, u32 addr, u8 opc, Opcode o
         printf(", ");
     }
 
-    if (r.name[0] != '\0') {
-        if((r.type & MMT_POINTER) == MMT_POINTER)
-            printf("[");
-
-        if((r.type & MMT_SEGMENT_OVERRIDABLE) == MMT_SEGMENT_OVERRIDABLE)
-            printf("%s", prefix);
-
-        printf("%s", r.name);
-
-        if((r.type & MMT_DISPLACEMENT_WORD) == MMT_DISPLACEMENT_WORD)
-            printf("%d",  machine->cpu->displacement);
-
-        if((r.type & MMT_DISPLACEMENT_BYTE) == MMT_DISPLACEMENT_BYTE)
-            printf("%d",  machine->cpu->displacement);
-
-        if((r.type & MMT_VALUE_WORD) == MMT_VALUE_WORD)
-            printf("0x%04X",  machine->cpu->immediate_read.word);
-
-        if((r.type & MMT_VALUE_BYTE) == MMT_VALUE_BYTE)
-            printf("0x%02X",  machine->cpu->immediate_read.word);
-
-        if((r.type & MMT_ADDRESS) == MMT_ADDRESS)
-            printf("%04X",  machine->cpu->immediate_read.word);
-
-        if((r.type & MMT_POINTER) == MMT_POINTER)
-            printf("]");
-    }
+    print_memory_mnemonic(machine, r, machine->cpu->immediate_read, prefix);
 
     printf("\n");
 }
@@ -162,6 +154,7 @@ void machine_tick(Machine *m) {
         cpu_error_marker(m, __FILE__, __LINE__);
         cpu_error_int(m, "opcode 0x%02X not implemented", opcode_num);
     }
+    //usleep(1000 * 50);
     //print_stack(m);
     //dump_cpu(m);
     //cpu_instruction_context(m);

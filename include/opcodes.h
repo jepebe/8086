@@ -18,8 +18,8 @@ typedef enum {
     IB_SE,
     /// Immediate Word (16 bit)
     IW,
-    /// Immediate Opcode
-    ImmOpc,
+    /// Immediate Double Word (32 bit)
+    IDW,
     /// Register AX
     R_AX,
     /// Register AL
@@ -50,8 +50,6 @@ typedef enum {
     R_SI,
     /// Register DI - Destination Index
     R_DI,
-    /// Memory Word (Pointer to memory)
-    MW,
     /// Register or Memory Byte
     RMB,
     /// Register or Memory Word

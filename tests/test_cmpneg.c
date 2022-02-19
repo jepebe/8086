@@ -10,7 +10,7 @@ int main() {
     test_testcase(
             &tester,
             "../tests/bins/cmpneg.bin",
-            "../tests/bins/res_cmpneg.bin",
+            "../tests/bins/results/res_cmpneg.bin",
             true
     );
 

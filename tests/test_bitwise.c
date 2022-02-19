@@ -10,7 +10,7 @@ int main() {
     test_testcase(
             &tester,
             "../tests/bins/bitwise.bin",
-            "../tests/bins/res_bitwise.bin",
+            "../tests/bins/results/res_bitwise.bin",
             true
     );
 

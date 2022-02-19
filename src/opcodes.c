@@ -68,7 +68,22 @@ const Opcode opcodes[] = {
         [0x5B] = {op_pop, R_BX, Implied, "POP"},
         [0x5F] = {op_pop, R_DI, Implied, "POP"},
 
-        [0x74] = {op_jz, Implied, IB, "JZ"},
+        [0x70] = {op_jo, Implied, IB, "JO"},
+        [0x71] = {op_jno, Implied, IB, "JNO"},
+        [0x72] = {op_jb, Implied, IB, "JB"},
+        [0x73] = {op_jae, Implied, IB, "JAE"},
+        [0x74] = {op_jz, Implied, IB, "JZ"}, // JE
+        [0x75] = {op_jne, Implied, IB, "JNE"},
+        [0x76] = {op_jbe, Implied, IB, "JBE"},
+        [0x77] = {op_ja, Implied, IB, "JA"},
+        [0x78] = {op_js, Implied, IB, "JS"},
+        [0x79] = {op_jns, Implied, IB, "JNS"},
+        [0x7A] = {op_jp, Implied, IB, "JP"},
+        [0x7B] = {op_jnp, Implied, IB, "JNP"},
+        [0x7C] = {op_jnge, Implied, IB, "JNGE"},
+        [0x7D] = {op_jnl, Implied, IB, "JNL"},
+        [0x7E] = {op_jng, Implied, IB, "JNG"},
+        [0x7F] = {op_jnle, Implied, IB, "JNLE"}, // JG
 
         [0x84] = {op_test_b, RMB, RB, "TEST"},
         [0x85] = {op_test_w, RMW, RW, "TEST"},
@@ -81,6 +96,7 @@ const Opcode opcodes[] = {
 
         [0x90] = {op_nop, Implied, Implied, "NOP"},
         [0x9C] = {op_pushf, Implied, Implied, "PUSHF"},
+        [0x9A] = {op_call_far, Implied, IDW, "CALL"},
         [0x9D] = {op_popf, Implied, Implied, "POPF"},
         [0x9F] = {op_lahf, Implied, Implied, "LAHF"},
 
@@ -116,10 +132,13 @@ const Opcode opcodes[] = {
         [0xBE] = {op_mov_w, R_SI, IW, "MOV"},
         [0xBF] = {op_mov_w, R_DI, IW, "MOV"},
 
+        [0xC2] = {op_retn, Implied, IW, "RET"},
         [0xC3] = {op_ret, Implied, Implied, "RET"},
         [0xC4] = {op_les, RW, RMW, "LES"},
         [0xC6] = {op_mov_b, RMB, IB, "MOV"},
         [0xC7] = {op_mov_w, RMW, IW, "MOV"},
+        [0xCA] = {op_retn_far, Implied, IW, "RETF"},
+        [0xCB] = {op_ret_far, Implied, Implied, "RETF"},
         [0xCD] = {op_int, Implied, IB, "INT"},
         [0xCE] = {op_into, Implied, Implied, "INTO"},
         [0xCF] = {op_iret, Implied, Implied, "IRET"},
@@ -128,7 +147,11 @@ const Opcode opcodes[] = {
         [0xD5] = {op_aad, Implied, IB, "AAD"},
         [0xD7] = {op_xlat, Implied, Implied, "XLAT"},
 
+        [0xE0] = {op_loopne, Implied, IB, "LOOPNE"},
+        [0xE1] = {op_loope, Implied, IB, "LOOPE"},
+        [0xE2] = {op_loop, Implied, IB, "LOOP"},
         [0xE3] = {op_jmp_cxz, Implied, IB, "JCXZ"},
+        [0xE8] = {op_call_relative, Implied, IW, "CALL"},
         [0xE9] = {op_jmp_near_relative, Implied, IW, "JMP"},
         [0xEB] = {op_jmp_short, Implied, IB, "JMP"},
 
@@ -232,7 +255,8 @@ const Opcode opcodes_grp4[] = {
 const Opcode opcodes_grp5[] = {
         [000] = {op_inc_w, RMW, Implied, "INC"},
         [001] = {op_dec_w, RMW, Implied, "DEC"},
-        [002] = {op_call, Implied, RMW, "CALL"},
+        [002] = {op_call_direct, Implied, RMW, "CALL"},
+        [003] = {op_call_far, Implied, RMW, "CALL"},
         [004] = {op_jmp_near_indirect, Implied, RMW, "JMP"},
 };
 
@@ -358,6 +382,16 @@ ReadOperand decode_read_op(Machine *machine, AddressOperandCode read_op) {
             cpu->immediate_read.word = w;
             cpu->IP += 2;
             return (ReadOperand) {.word = (u16 *) &cpu->immediate_read.word};
+        }
+        case IDW: {
+            // fixme: hacky solution
+            u32 addr = cpu_ip(cpu);
+            u16 w1 = read_memory_u16(addr, mem);
+            cpu->immediate_read.word = w1;
+            u16 w2 = read_memory_u16(addr + 2, mem);
+            cpu->immediate_write.word = w2;
+            cpu->IP += 4;
+            return (ReadOperand) {.word =  (u16 *) &mem->ram[addr]};
         }
         case R_AX: {
             return (ReadOperand) {.word = &cpu->AX};
@@ -544,10 +578,10 @@ static const MemoryMnemonic AOC_TABLE[AOC_COUNT] = {
         [Implied] = {MMT_EMPTY, ""},
         [ONE] = {.name ="1"},
         [IA] = {MMT_POINTER | MMT_ADDRESS | MMT_SEGMENT_OVERRIDABLE, "$"},
-//        [IAQ] = {MMT_POINTER | MMT_ADDRESS | MMT_SEGMENT_OVERRIDABLE, "$"},
         [IB] = {MMT_VALUE_BYTE, "IB="},
         [IB_SE] = {MMT_VALUE_BYTE, "IBSE="},
         [IW] = {MMT_VALUE_WORD, "IW="},
+        [IDW] = {MMT_ADDRESS_32BIT, "$"},
         [R_AX] = {.name ="AX"},
         [R_AL] = {.name ="AL"},
         [R_AH] = {.name ="AH"},

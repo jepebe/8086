@@ -4,13 +4,13 @@
 
 
 int main() {
-    Tester tester = create_tester("Testcase REP");
+    Tester tester = create_tester("Testcase JUMP2");
 
-    test_section("rep.bin");
+    test_section("jump2.bin");
     test_testcase(
             &tester,
-            "../tests/bins/rep.bin",
-            "../tests/bins/results/res_rep.bin",
+            "../tests/bins/jump2.bin",
+            "../tests/bins/results/res_jump2.bin",
             true
     );
 

@@ -55,9 +55,36 @@ void op_hlt(Machine *m, ReadOperand rop, WriteOperand wop) {
 }
 
 void op_ret(Machine *m, ReadOperand rop, WriteOperand wop) {
+    // Near return to calling procedure.
     (void) rop;
     (void) wop;
     op_pop(m, (ReadOperand) {0}, (WriteOperand) {.word=&m->cpu->IP});
+}
+
+void op_retn(Machine *m, ReadOperand rop, WriteOperand wop) {
+    // Near return to calling procedure and pop imm16 bytes from stack.
+    (void) rop;
+    (void) wop;
+    op_pop(m, (ReadOperand) {0}, (WriteOperand) {.word=&m->cpu->IP});
+
+    m->cpu->SP += *rop.word; // pop imm16 number of bytes from the stack
+}
+
+void op_ret_far(Machine *m, ReadOperand rop, WriteOperand wop) {
+    // Far return to calling procedure.
+    (void) wop;
+    (void) rop;
+    op_pop(m, (ReadOperand) {0}, (WriteOperand) {.word=&m->cpu->IP});
+    op_pop(m, (ReadOperand) {0}, (WriteOperand) {.word=&m->cpu->CS});
+}
+
+void op_retn_far(Machine *m, ReadOperand rop, WriteOperand wop) {
+    // Far return to calling procedure and pop imm16 bytes from stack.
+    (void) wop;
+    op_pop(m, (ReadOperand) {0}, (WriteOperand) {.word=&m->cpu->IP});
+    op_pop(m, (ReadOperand) {0}, (WriteOperand) {.word=&m->cpu->CS});
+
+    m->cpu->SP += *rop.word; // pop imm16 number of bytes from the stack
 }
 
 void op_iret(Machine *m, ReadOperand rop, WriteOperand wop) {
@@ -68,10 +95,27 @@ void op_iret(Machine *m, ReadOperand rop, WriteOperand wop) {
     op_popf(m, (ReadOperand) {0}, (WriteOperand) {0});
 }
 
-void op_call(Machine *m, ReadOperand rop, WriteOperand wop) {
+void op_call_direct(Machine *m, ReadOperand rop, WriteOperand wop) {
+    // Call near, absolute indirect, address given in r/m16.
     (void) wop;
     op_push(m, (ReadOperand) {.word = &m->cpu->IP}, (WriteOperand) {0});
     m->cpu->IP = *(rop.word);
+}
+
+void op_call_relative(Machine *m, ReadOperand rop, WriteOperand wop) {
+    // Call near, relative, displacement relative to next instruction.
+    (void) wop;
+    op_push(m, (ReadOperand) {.word = &m->cpu->IP}, (WriteOperand) {0});
+    m->cpu->IP += (s16) *(rop.word);
+}
+
+void op_call_far(Machine *m, ReadOperand rop, WriteOperand wop) {
+    // Call far, absolute, address given in operand.
+    (void) wop;
+    op_push(m, (ReadOperand) {.word = &m->cpu->CS}, (WriteOperand) {0});
+    op_push(m, (ReadOperand) {.word = &m->cpu->IP}, (WriteOperand) {0});
+    m->cpu->IP = *rop.word;
+    m->cpu->CS = *(rop.word + 1);
 }
 
 void op_into(Machine *m, ReadOperand rop, WriteOperand wop) {

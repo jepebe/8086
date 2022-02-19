@@ -172,3 +172,19 @@ void print_flags(Machine *machine) {
     printf("]\x1b[0m\n");
 }
 
+void print_cpu(Machine *machine) {
+    CPU *cpu = machine->cpu;
+    printf("\x1b[0;33m");
+    printf("SS:SP=$%04X:%04X ", cpu->SS, cpu->SP);
+    printf("CS:IP=$%04X:%04X ", cpu->CS, cpu->IP);
+    printf("DS:SI=$%04X:%04X ", cpu->DS, cpu->SI);
+    printf("ES:DI=$%04X:%04X ", cpu->ES, cpu->DI);
+    printf("AX=0x%04X ", cpu->AX);
+    printf("BX=0x%04X ", cpu->BX);
+    printf("CX=0x%04X ", cpu->CX);
+    printf("DX=0x%04X ", cpu->DX);
+    printf("BP=0x%04X ", cpu->BP);
+    printf("f=%s ", flags_to_str(cpu->flags));
+    printf("\x1b[0m");
+}
+

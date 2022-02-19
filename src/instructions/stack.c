@@ -30,12 +30,12 @@ void op_push(Machine *m, ReadOperand rop, WriteOperand wop) {
     m->cpu->SP -= 2;
     u16 *ptr = stack_pointer(m);
     *(ptr) = *rop.word;
-    //dump_cpu(m);
+    //cpu_note_u32(m, "PUSH 0x%04X", *rop.word);
 }
 
 void op_pop(Machine *m, ReadOperand rop, WriteOperand wop) {
     (void) rop;
+    //cpu_note_u32(m, "POP 0x%04X", peek_stack(m));
     *wop.word = peek_stack(m);
     m->cpu->SP += 2;
 }
-

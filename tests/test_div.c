@@ -10,7 +10,7 @@ int main() {
     test_testcase(
             &tester,
             "../tests/bins/div.bin",
-            "../tests/bins/res_div.bin",
+            "../tests/bins/results/res_div.bin",
             true
     );
 

@@ -198,7 +198,7 @@ static u32 displace_address(Machine *machine, MemoryMode mode, s16 displacement)
             break;
         }
         case BX_SI_PTR: {
-            default_segment = SS_SEGMENT;
+            default_segment = DS_SEGMENT;
             offset = cpu->BX + cpu->SI + displacement;
             break;
         }
@@ -233,7 +233,7 @@ ReadOperand get_read_memory(Machine *m, MemoryMode mode) {
 
 WriteOperand get_write_memory(Machine *m, MemoryMode mode) {
     Memory *mem = m->memory;
-    u16 displacement = get_displacement(m, mode);
+    s16 displacement = get_displacement(m, mode);
     m->cpu->immediate_write.word = displacement;
     u32 addr = displace_address(m, mode, displacement);
 

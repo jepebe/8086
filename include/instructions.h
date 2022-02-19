@@ -47,6 +47,14 @@ void op_sbb_w(Machine *m, ReadOperand rop, WriteOperand wop);
 
 void op_sbb_b(Machine *m, ReadOperand rop, WriteOperand wop);
 
+void op_inc_b(Machine *m, ReadOperand rop, WriteOperand wop);
+
+void op_inc_w(Machine *m, ReadOperand rop, WriteOperand wop);
+
+void op_dec_w(Machine *m, ReadOperand rop, WriteOperand wop);
+
+void op_dec_b(Machine *m, ReadOperand rop, WriteOperand wop);
+
 
 // bitwise
 void op_and_w(Machine *m, ReadOperand rop, WriteOperand wop);
@@ -78,7 +86,44 @@ void op_jmp_near_indirect(Machine *m, ReadOperand rop, WriteOperand wop);
 
 void op_jz(Machine *m, ReadOperand rop, WriteOperand wop);
 
+void op_ja(Machine *m, ReadOperand rop, WriteOperand wop);
+
+void op_jae(Machine *m, ReadOperand rop, WriteOperand wop);
+
+void op_jb(Machine *m, ReadOperand rop, WriteOperand wop);
+
+void op_jbe(Machine *m, ReadOperand rop, WriteOperand wop);
+
+void op_jnle(Machine *m, ReadOperand rop, WriteOperand wop);
+
+void op_jnl(Machine *m, ReadOperand rop, WriteOperand wop);
+
+void op_jnge(Machine *m, ReadOperand rop, WriteOperand wop);
+
+void op_jng(Machine *m, ReadOperand rop, WriteOperand wop);
+
+void op_jne(Machine *m, ReadOperand rop, WriteOperand wop);
+
+void op_jno(Machine *m, ReadOperand rop, WriteOperand wop);
+
+void op_jnp(Machine *m, ReadOperand rop, WriteOperand wop);
+
+void op_jns(Machine *m, ReadOperand rop, WriteOperand wop);
+
+void op_jo(Machine *m, ReadOperand rop, WriteOperand wop);
+
+void op_jp(Machine *m, ReadOperand rop, WriteOperand wop);
+
+void op_js(Machine *m, ReadOperand rop, WriteOperand wop);
+
+void op_loop(Machine *m, ReadOperand rop, WriteOperand wop);
+
+void op_loope(Machine *m, ReadOperand rop, WriteOperand wop);
+
+void op_loopne(Machine *m, ReadOperand rop, WriteOperand wop);
+
 void op_jmp_cxz(Machine *m, ReadOperand rop, WriteOperand wop);
+
 
 /// Returns the value at the top of the stack
 u16 peek_stack(Machine *machine);
@@ -109,13 +154,6 @@ void op_sti(Machine *m, ReadOperand rop, WriteOperand wop);
 
 void op_nop(Machine *m, ReadOperand rop, WriteOperand wop);
 
-void op_inc_b(Machine *m, ReadOperand rop, WriteOperand wop);
-
-void op_inc_w(Machine *m, ReadOperand rop, WriteOperand wop);
-
-void op_dec_w(Machine *m, ReadOperand rop, WriteOperand wop);
-
-void op_dec_b(Machine *m, ReadOperand rop, WriteOperand wop);
 
 void op_shl_w(Machine *m, ReadOperand rop, WriteOperand wop);
 
@@ -183,7 +221,18 @@ void op_into(Machine *m, ReadOperand rop, WriteOperand wop);
 
 void op_ret(Machine *m, ReadOperand rop, WriteOperand wop);
 
-void op_call(Machine *m, ReadOperand rop, WriteOperand wop);
+void op_retn(Machine *m, ReadOperand rop, WriteOperand wop);
+
+void op_call_direct(Machine *m, ReadOperand rop, WriteOperand wop);
+
+void op_call_relative(Machine *m, ReadOperand rop, WriteOperand wop);
+
+void op_call_far(Machine *m, ReadOperand rop, WriteOperand wop);
+
+void op_ret_far(Machine *m, ReadOperand rop, WriteOperand wop);
+
+void op_retn_far(Machine *m, ReadOperand rop, WriteOperand wop);
+
 
 // string operations
 void op_cmps_w(Machine *m, ReadOperand rop, WriteOperand wop);
@@ -208,13 +257,11 @@ void op_stos_b(Machine *m, ReadOperand rop, WriteOperand wop);
 
 void op_stos_w(Machine *m, ReadOperand rop, WriteOperand wop);
 
-//void op_rep(Machine *m, ReadOperand rop, WriteOperand wop);
 
 void op_repz(Machine *m, ReadOperand rop, WriteOperand wop);
 
 void op_repnz(Machine *m, ReadOperand rop, WriteOperand wop);
 
-//void op_rep_ub(Machine *m, ReadOperand rop, WriteOperand wop);
 
 // segments
 void op_es(Machine *m, ReadOperand rop, WriteOperand wop);

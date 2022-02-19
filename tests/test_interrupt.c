@@ -10,7 +10,7 @@ int main() {
     test_testcase(
             &tester,
             "../tests/bins/interrupt.bin",
-            "../tests/bins/res_interrupt.bin",
+            "../tests/bins/results/res_interrupt.bin",
             false
     );
 

@@ -94,3 +94,11 @@ add_test("Testcase REP" test_rep)
 add_executable(test_segpr tests/test_segpr.c)
 target_link_libraries(test_segpr 80x86)
 add_test("Testcase SEGPR" test_segpr)
+
+add_executable(test_jump1 tests/test_jump1.c)
+target_link_libraries(test_jump1 80x86)
+add_test("Testcase JUMP1" test_jump1)
+
+add_executable(test_jump2 tests/test_jump2.c)
+target_link_libraries(test_jump2 80x86)
+add_test("Testcase JUMP2" test_jump2)

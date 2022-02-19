@@ -17,6 +17,11 @@ typedef int16_t s16;
 typedef int32_t s32;
 typedef int64_t s64;
 
+typedef union {
+    u16 word;
+    u8 byte;
+} MixedValue;
+
 //#define LEN(x) (sizeof(x) / sizeof((x)[0]))
 //
 //
