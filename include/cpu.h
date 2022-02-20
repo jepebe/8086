@@ -130,7 +130,6 @@ typedef struct {
         u8 byte_cache;
     };
     s16 displacement;
-    u32 addr;
 } Operand;
 
 void cpu_reset(CPU *cpu);

@@ -108,3 +108,7 @@ add_test("Testcase JUMP2" test_jump2)
 add_executable(test_jmpmov tests/test_jmpmov.c)
 target_link_libraries(test_jmpmov 80x86)
 add_test("Testcase JMPMOV" test_jmpmov)
+
+add_executable(test_datatrnf tests/test_datatrnf.c)
+target_link_libraries(test_datatrnf 80x86)
+add_test("Testcase DATATRNF" test_datatrnf)

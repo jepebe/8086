@@ -186,6 +186,7 @@ static const MemoryMnemonic AOC_TABLE[AOC_COUNT] = {
         [R_SP] = {.name ="SP"},
         [R_SI] = {.name ="SI"},
         [R_DI] = {.name ="DI"},
+        [R_ES] = {.name ="ES"},
 };
 
 static MemoryMnemonic decode_aoc(Machine *machine, AddressOperandCode aoc) {

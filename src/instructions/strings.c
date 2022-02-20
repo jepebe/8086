@@ -54,12 +54,6 @@ void op_stos_b(Machine *m, Operand *rop, Operand *wop) {
     }
 }
 
-void op_lahf(Machine *m, Operand *rop, Operand *wop) {
-    (void) rop;
-    (void) wop;
-    m->cpu->AH = m->cpu->flags.word & 0xff;
-}
-
 void scas_b(Machine *m) {
     u32 addr = effective_addr(m, m->cpu->DI, ES_SEGMENT);
     u8 src = read_memory_u8(addr, m->memory);

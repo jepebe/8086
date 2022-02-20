@@ -22,6 +22,8 @@ u8 sub_byte(Machine *m, u8 src, u8 dest, u8 borrow_flag);
 // movs
 void op_les(Machine *m, Operand *rop, Operand *wop);
 
+void op_lds(Machine *m, Operand *rop, Operand *wop);
+
 void op_lea(Machine *m, Operand *rop, Operand *wop);
 
 void op_xlat(Machine *m, Operand *rop, Operand *wop);
@@ -29,6 +31,14 @@ void op_xlat(Machine *m, Operand *rop, Operand *wop);
 void op_mov_w(Machine *m, Operand *rop, Operand *wop);
 
 void op_mov_b(Machine *m, Operand *rop, Operand *wop);
+
+void op_xchg_b(Machine *m, Operand *rop, Operand *wop);
+
+void op_xchg_w(Machine *m, Operand *rop, Operand *wop);
+
+void op_sahf(Machine *m, Operand *rop, Operand *wop);
+
+void op_lahf(Machine *m, Operand *rop, Operand *wop);
 
 
 // arithmetics
@@ -254,16 +264,17 @@ void op_scas_w(Machine *m, Operand *rop, Operand *wop);
 
 void op_scas_b(Machine *m, Operand *rop, Operand *wop);
 
-void op_lahf(Machine *m, Operand *rop, Operand *wop);
-
 void op_stos_b(Machine *m, Operand *rop, Operand *wop);
 
 void op_stos_w(Machine *m, Operand *rop, Operand *wop);
 
 
+
 void op_repz(Machine *m, Operand *rop, Operand *wop);
 
 void op_repnz(Machine *m, Operand *rop, Operand *wop);
+
+
 
 
 // segments

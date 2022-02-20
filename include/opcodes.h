@@ -50,6 +50,8 @@ typedef enum {
     R_SI,
     /// Register DI - Destination Index
     R_DI,
+    /// Register ES - Extra Segment
+    R_ES,
     /// Register or Memory Byte
     RMB,
     /// Register or Memory Word

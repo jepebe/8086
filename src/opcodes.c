@@ -10,6 +10,8 @@ const Opcode opcodes[] = {
         [0x03] = {op_add_w, RW, RMW, "ADD"},
         [0x04] = {op_add_b, R_AL, IB, "ADD"},
         [0x05] = {op_add_w, R_AX, IW, "ADD"},
+        [0x06] = {op_push, Implied, R_ES, "PUSH"},
+        [0x07] = {op_pop, R_ES, Implied, "POP"},
         [0x08] = {op_or_b, RMB, RB, "OR"},
         [0x09] = {op_or_w, RMW, RW, "OR"},
         [0x0A] = {op_or_b, RB, RMB, "OR"},
@@ -65,6 +67,7 @@ const Opcode opcodes[] = {
         [0x57] = {op_push, Implied, R_DI, "PUSH"},
         [0x58] = {op_pop, R_AX, Implied, "POP"},
         [0x59] = {op_pop, R_CX, Implied, "POP"},
+        [0x5A] = {op_pop, R_DX, Implied, "POP"},
         [0x5B] = {op_pop, R_BX, Implied, "POP"},
         [0x5F] = {op_pop, R_DI, Implied, "POP"},
 
@@ -87,6 +90,8 @@ const Opcode opcodes[] = {
 
         [0x84] = {op_test_b, RMB, RB, "TEST"},
         [0x85] = {op_test_w, RMW, RW, "TEST"},
+        [0x86] = {op_xchg_b, RB, RMB, "XCHG"},
+        [0x87] = {op_xchg_w, RW, RMW, "XCHG"},
         [0x88] = {op_mov_b, RMB, RB, "MOV"},
         [0x89] = {op_mov_w, RMW, RW, "MOV"},
         [0x8A] = {op_mov_b, RB, RMB, "MOV"},
@@ -94,11 +99,14 @@ const Opcode opcodes[] = {
         [0x8C] = {op_mov_w, RMW, SR, "MOV"},
         [0x8D] = {op_lea, RW, RMW, "LEA"},
         [0x8E] = {op_mov_w, SR, RMW, "MOV"},
+        [0x8F] = {op_pop, RMW, Implied, "POP"},
 
         [0x90] = {op_nop, Implied, Implied, "NOP"},
+        [0x93] = {op_xchg_w, R_AX, R_BX, "XCHG"},
         [0x9C] = {op_pushf, Implied, Implied, "PUSHF"},
         [0x9A] = {op_call_far, Implied, IDW, "CALL"},
         [0x9D] = {op_popf, Implied, Implied, "POPF"},
+        [0x9E] = {op_sahf, Implied, Implied, "SAHF"},
         [0x9F] = {op_lahf, Implied, Implied, "LAHF"},
 
         [0xA1] = {op_mov_w, R_AX, IA, "MOV"},
@@ -136,6 +144,7 @@ const Opcode opcodes[] = {
         [0xC2] = {op_retn, Implied, IW, "RET"},
         [0xC3] = {op_ret, Implied, Implied, "RET"},
         [0xC4] = {op_les, RW, RMW, "LES"},
+        [0xC5] = {op_lds, RW, RMW, "LDS"},
         [0xC6] = {op_mov_b, RMB, IB, "MOV"},
         [0xC7] = {op_mov_w, RMW, IW, "MOV"},
         [0xCA] = {op_retn_far, Implied, IW, "RETF"},
@@ -262,6 +271,7 @@ const Opcode opcodes_grp5[] = {
         [003] = {op_call_far, Implied, RMW, "CALL"},
         [004] = {op_jmp_near_indirect, Implied, RMW, "JMP"},
         [005] = {op_jmp_far, Implied, RMW, "JMP"},
+        [006] = {op_push, Implied, RMW, "PUSH"},
 };
 
 bool has_mod_rm_byte(Opcode opcode) {
@@ -366,7 +376,6 @@ Operand decode_read_op(Machine *machine, AddressOperandCode read_op) {
             Operand op = {
                     .word_cache = offset,
                     .word = (u16 *) &mem->ram[addr],
-                    .addr = addr,
             };
             cpu->IP += 2;
             return op;
@@ -376,7 +385,6 @@ Operand decode_read_op(Machine *machine, AddressOperandCode read_op) {
             u8 b = read_memory_u8(addr, mem);
             Operand op = {
                     .byte_cache = b,
-                    .addr = addr,
                     .byte = (u8 *) &op.byte_cache
             };
 
@@ -391,7 +399,6 @@ Operand decode_read_op(Machine *machine, AddressOperandCode read_op) {
             Operand op = {
                     .word_cache = word,
                     .word = (u16 *) &op.word_cache,
-                    .addr = addr,
             };
             cpu->IP += 1;
             return op;
@@ -402,7 +409,6 @@ Operand decode_read_op(Machine *machine, AddressOperandCode read_op) {
             Operand op = {
                     .word_cache = word,
                     .word = (u16 *) &op.word_cache,
-                    .addr = addr,
             };
             cpu->IP += 2;
             return op;
@@ -416,7 +422,6 @@ Operand decode_read_op(Machine *machine, AddressOperandCode read_op) {
             Operand op = {
                     .dword_cache = (w2 << 16) | w1,  // pack value for disassembly
                     .word = (u16 *) &mem->ram[addr],
-                    .addr = addr,
             };
             return op;
         }
@@ -440,6 +445,9 @@ Operand decode_read_op(Machine *machine, AddressOperandCode read_op) {
         }
         case R_DI: {
             return (Operand) {.word = &cpu->DI};
+        }
+        case R_ES: {
+            return (Operand) {.word = &cpu->ES};
         }
         case RB:
         case RW: {
@@ -504,7 +512,6 @@ Operand decode_write_op(Machine *machine, AddressOperandCode write_op) {
             u32 addr = effective_addr(machine, offset, DS_SEGMENT);
             Operand op = {
                     .word_cache = offset,
-                    .addr = addr,
                     .word = (u16 *) &mem->ram[addr]
             };
             cpu->IP += 2;
@@ -554,6 +561,9 @@ Operand decode_write_op(Machine *machine, AddressOperandCode write_op) {
         }
         case R_DI: {
             return (Operand) {.word =  &cpu->DI};
+        }
+        case R_ES: {
+            return (Operand) {.word =  &cpu->ES};
         }
         case RMB:
         case RMW: {

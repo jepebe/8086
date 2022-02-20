@@ -102,55 +102,79 @@ static s16 get_displacement(Machine *machine, MemoryMode mode) {
     return displacement;
 }
 
-static u32 displace_address(Machine *machine, MemoryMode mode, s16 displacement) {
-    CPU *cpu = machine->cpu;
+SegmentOverride default_displacement_segment(Machine *machine, MemoryMode mode) {
     SegmentOverride default_segment;
-    u16 offset;
     switch (mode.memory_mode) {
         case DIRECT_OR_BP_PTR: {
             if (mode.displacement_type == NO_DISP) {
                 // direct
                 default_segment = DS_SEGMENT;
-                offset = displacement;
             } else {
                 // [BP+disp]
                 default_segment = SS_SEGMENT;
+            }
+            break;
+        }
+        case BP_SI_PTR:
+        case BP_DI_PTR: {
+            default_segment = SS_SEGMENT;
+            break;
+        }
+        case DI_PTR:
+        case SI_PTR:
+        case BX_SI_PTR:
+        case BX_PTR:
+        case BX_DI_PTR: {
+            default_segment = DS_SEGMENT;
+            break;
+        }
+        default: {
+            cpu_error_marker(machine, __FILE__, __LINE__);
+            cpu_error(machine, "Unhandled Memory Mode Table mode '%d'", mode.memory_mode);
+        }
+    }
+    return default_segment;
+}
+
+static u16 displace_address(Machine *machine, MemoryMode mode, s16 displacement) {
+    CPU *cpu = machine->cpu;
+    u16 offset;
+    switch (mode.memory_mode) {
+        case DIRECT_OR_BP_PTR: {
+            if (mode.displacement_type == NO_DISP) {
+                // direct
+                offset = displacement;
+            } else {
+                // [BP+disp]
                 offset = cpu->BP + displacement;
             }
             break;
         }
         case SI_PTR: {
-            default_segment = DS_SEGMENT;
             offset = cpu->SI + displacement;
             break;
         }
         case DI_PTR: {
-            default_segment = DS_SEGMENT;
             offset = cpu->DI + displacement;
             break;
         }
         case BP_SI_PTR: {
-            default_segment = SS_SEGMENT;
             offset = cpu->BP + cpu->SI + displacement;
             break;
         }
         case BP_DI_PTR: {
-            default_segment = SS_SEGMENT;
             offset = cpu->BP + cpu->DI + displacement;
             break;
         }
         case BX_SI_PTR: {
-            default_segment = DS_SEGMENT;
             offset = cpu->BX + cpu->SI + displacement;
             break;
         }
         case BX_PTR: {
-            default_segment = DS_SEGMENT;
             offset = cpu->BX + displacement;
             break;
         }
         case BX_DI_PTR: {
-            default_segment = DS_SEGMENT;
             offset = cpu->BX + cpu->DI + displacement;
             break;
         }
@@ -159,19 +183,21 @@ static u32 displace_address(Machine *machine, MemoryMode mode, s16 displacement)
             cpu_error(machine, "Unhandled Memory Mode Table mode '%d'", mode.memory_mode);
         }
     }
-    return effective_addr(machine, offset, default_segment);
+    return offset;
 }
 
 Operand get_operand(Machine *m, MemoryMode mode) {
     Memory *mem = m->memory;
 
     s16 displacement = get_displacement(m, mode);
-    u32 addr = displace_address(m, mode, displacement);
+    u16 offset = displace_address(m, mode, displacement);
+    SegmentOverride default_segment = default_displacement_segment(m, mode);
+    u32 addr = effective_addr(m, offset, default_segment);
 
     Operand op = {
             .displacement = displacement,
-            .word_cache = displacement,
-            .addr = addr
+            .word_cache = offset,
+//            .addr = offset
     };
 
     switch (mode.operand_size) {
