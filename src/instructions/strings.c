@@ -11,7 +11,7 @@ void stos_w(Machine *m) {
     }
 }
 
-void op_stos_w(Machine *m, ReadOperand rop, WriteOperand wop) {
+void op_stos_w(Machine *m, Operand *rop, Operand *wop) {
     (void) rop;
     (void) wop;
     if (m->cpu->repeat != NO_REPEAT) {
@@ -38,7 +38,7 @@ void stos_b(Machine *m) {
     }
 }
 
-void op_stos_b(Machine *m, ReadOperand rop, WriteOperand wop) {
+void op_stos_b(Machine *m, Operand *rop, Operand *wop) {
     (void) rop;
     (void) wop;
     if (m->cpu->repeat != NO_REPEAT) {
@@ -54,7 +54,7 @@ void op_stos_b(Machine *m, ReadOperand rop, WriteOperand wop) {
     }
 }
 
-void op_lahf(Machine *m, ReadOperand rop, WriteOperand wop) {
+void op_lahf(Machine *m, Operand *rop, Operand *wop) {
     (void) rop;
     (void) wop;
     m->cpu->AH = m->cpu->flags.word & 0xff;
@@ -73,7 +73,7 @@ void scas_b(Machine *m) {
     }
 }
 
-void op_scas_b(Machine *m, ReadOperand rop, WriteOperand wop) {
+void op_scas_b(Machine *m, Operand *rop, Operand *wop) {
     (void) rop;
     (void) wop;
     if (m->cpu->repeat == NO_REPEAT) {
@@ -111,7 +111,7 @@ void scas_w(Machine *m) {
     }
 }
 
-void op_scas_w(Machine *m, ReadOperand rop, WriteOperand wop) {
+void op_scas_w(Machine *m, Operand *rop, Operand *wop) {
     (void) rop;
     (void) wop;
     if (m->cpu->repeat == NO_REPEAT) {
@@ -151,7 +151,7 @@ void movs_b(Machine *m) {
     }
 }
 
-void op_movs_b(Machine *m, ReadOperand rop, WriteOperand wop) {
+void op_movs_b(Machine *m, Operand *rop, Operand *wop) {
     (void) rop;
     (void) wop;
     if (m->cpu->repeat != NO_REPEAT) {
@@ -182,7 +182,7 @@ void movs_w(Machine *m) {
     }
 }
 
-void op_movs_w(Machine *m, ReadOperand rop, WriteOperand wop) {
+void op_movs_w(Machine *m, Operand *rop, Operand *wop) {
     (void) rop;
     (void) wop;
     if (m->cpu->repeat != NO_REPEAT) {
@@ -209,7 +209,7 @@ static void lods_b(Machine *m) {
     }
 }
 
-void op_lods_b(Machine *m, ReadOperand rop, WriteOperand wop) {
+void op_lods_b(Machine *m, Operand *rop, Operand *wop) {
     (void) rop;
     (void) wop;
     if (m->cpu->repeat != NO_REPEAT) {
@@ -236,7 +236,7 @@ static void lods_w(Machine *m) {
     }
 }
 
-void op_lods_w(Machine *m, ReadOperand rop, WriteOperand wop) {
+void op_lods_w(Machine *m, Operand *rop, Operand *wop) {
     (void) rop;
     (void) wop;
     if (m->cpu->repeat != NO_REPEAT) {
@@ -268,7 +268,7 @@ static void cmps_b(Machine *m) {
     }
 }
 
-void op_cmps_b(Machine *m, ReadOperand rop, WriteOperand wop) {
+void op_cmps_b(Machine *m, Operand *rop, Operand *wop) {
     (void) rop;
     (void) wop;
     if (m->cpu->repeat == NO_REPEAT) {
@@ -308,7 +308,7 @@ static void cmps_w(Machine *m) {
     }
 }
 
-void op_cmps_w(Machine *m, ReadOperand rop, WriteOperand wop) {
+void op_cmps_w(Machine *m, Operand *rop, Operand *wop) {
     (void) rop;
     (void) wop;
     if (m->cpu->repeat == NO_REPEAT) {
@@ -332,14 +332,14 @@ void op_cmps_w(Machine *m, ReadOperand rop, WriteOperand wop) {
     }
 }
 
-void op_repz(Machine *m, ReadOperand rop, WriteOperand wop) {
+void op_repz(Machine *m, Operand *rop, Operand *wop) {
     (void) rop;
     (void) wop;
     (void) m;
     m->cpu->repeat = REPZ;
 }
 
-void op_repnz(Machine *m, ReadOperand rop, WriteOperand wop) {
+void op_repnz(Machine *m, Operand *rop, Operand *wop) {
     (void) rop;
     (void) wop;
     (void) m;

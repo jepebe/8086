@@ -14,6 +14,7 @@ endif ()
 set(SOURCES
         src/addressing.c
         src/cpu.c
+        src/disassembly.c
         src/debug.c
         src/machine.c
         src/memory.c
@@ -22,6 +23,7 @@ set(SOURCES
         src/instructions/arithmetic.c
         src/instructions/bitwise.c
         src/instructions/control.c
+        src/instructions/io.c
         src/instructions/jumps.c
         src/instructions/movs.c
         src/instructions/rotates.c
@@ -102,3 +104,7 @@ add_test("Testcase JUMP1" test_jump1)
 add_executable(test_jump2 tests/test_jump2.c)
 target_link_libraries(test_jump2 80x86)
 add_test("Testcase JUMP2" test_jump2)
+
+add_executable(test_jmpmov tests/test_jmpmov.c)
+target_link_libraries(test_jmpmov 80x86)
+add_test("Testcase JMPMOV" test_jmpmov)

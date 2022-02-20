@@ -4,21 +4,6 @@
 #include "machine.h"
 #include "debug.h"
 
-typedef struct {
-    union {
-        u16 *word;
-        u8 *byte;
-    };
-    u32 addr;
-} ReadOperand;
-
-typedef struct {
-    union {
-        u16 *word;
-        u8 *byte;
-    };
-} WriteOperand;
-
 typedef enum {
     AL = 0x0,
     CL = 0x1,
@@ -75,21 +60,10 @@ void fetch_addressing_mode(Machine *machine);
 
 AddrMode peek_addressing_mode(Machine *machine);
 
-ReadOperand get_read_register(Machine *machine, REG reg);
+Operand get_register(Machine *machine, REG reg);
 
-WriteOperand get_write_register(Machine *machine, REG reg);
+Operand get_segment_register(Machine *machine, SegREG reg);
 
-WriteOperand get_write_segment_register(Machine *machine, SegREG reg);
+Operand get_operand(Machine *machine, MemoryMode mode);
 
-ReadOperand get_read_segment_register(Machine *machine, SegREG reg);
-
-ReadOperand get_read_memory(Machine *machine, MemoryMode mode);
-
-WriteOperand get_write_memory(Machine *machine, MemoryMode mode);
-
-MemoryMnemonic get_register_name(REG reg);
-
-MemoryMnemonic get_segment_register_name(SegREG reg);
-
-MemoryMnemonic get_memory_mode_name(MemoryModeTable mode, DisplacementType disp_type);
-
+//Operand get_write_memory(Machine *machine, MemoryMode mode);

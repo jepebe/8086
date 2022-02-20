@@ -89,6 +89,7 @@ const Opcode opcodes[] = {
         [0x85] = {op_test_w, RMW, RW, "TEST"},
         [0x88] = {op_mov_b, RMB, RB, "MOV"},
         [0x89] = {op_mov_w, RMW, RW, "MOV"},
+        [0x8A] = {op_mov_b, RB, RMB, "MOV"},
         [0x8B] = {op_mov_w, RW, RMW, "MOV"},
         [0x8C] = {op_mov_w, RMW, SR, "MOV"},
         [0x8D] = {op_lea, RW, RMW, "LEA"},
@@ -153,7 +154,9 @@ const Opcode opcodes[] = {
         [0xE3] = {op_jmp_cxz, Implied, IB, "JCXZ"},
         [0xE8] = {op_call_relative, Implied, IW, "CALL"},
         [0xE9] = {op_jmp_near_relative, Implied, IW, "JMP"},
+        [0xEA] = {op_jmp_far, Implied, IDW, "JMP"},
         [0xEB] = {op_jmp_short, Implied, IB, "JMP"},
+        [0xEF] = {op_out_w, R_DX, R_AX, "OUT"},
 
         [0xF2] = {op_repnz, Implied, Implied, "REPNZ"},
         [0xF3] = {op_repz, Implied, Implied, "REPZ"},
@@ -258,6 +261,7 @@ const Opcode opcodes_grp5[] = {
         [002] = {op_call_direct, Implied, RMW, "CALL"},
         [003] = {op_call_far, Implied, RMW, "CALL"},
         [004] = {op_jmp_near_indirect, Implied, RMW, "JMP"},
+        [005] = {op_jmp_far, Implied, RMW, "JMP"},
 };
 
 bool has_mod_rm_byte(Opcode opcode) {
@@ -282,7 +286,7 @@ Opcode fetch_opcode(Machine *machine, u8 opcode_num) {
             Opcode grp_opc = opcodes_grp1[grp_idx];
             if (grp_opc.op_fn == 0) {
                 cpu_error_marker(machine, __FILE__, __LINE__);
-                cpu_note_int(machine, "group 1 opcode 0%02o not implemented", grp_idx);
+                cpu_note(machine, "group 1 opcode 0%02o not implemented", grp_idx);
             }
             return grp_opc;
         }
@@ -294,7 +298,7 @@ Opcode fetch_opcode(Machine *machine, u8 opcode_num) {
             Opcode grp_opc = opcodes_grp2[grp_idx];
             if (grp_opc.op_fn == 0) {
                 cpu_error_marker(machine, __FILE__, __LINE__);
-                cpu_note_int(machine, "group 2 opcode 0%02o not implemented", grp_idx);
+                cpu_note(machine, "group 2 opcode 0%02o not implemented", grp_idx);
             }
             return grp_opc;
         }
@@ -303,7 +307,7 @@ Opcode fetch_opcode(Machine *machine, u8 opcode_num) {
             Opcode grp_opc = opcodes_grp3a[grp_idx];
             if (grp_opc.op_fn == 0) {
                 cpu_error_marker(machine, __FILE__, __LINE__);
-                cpu_note_int(machine, "group 3a opcode 0%02o not implemented", grp_idx);
+                cpu_note(machine, "group 3a opcode 0%02o not implemented", grp_idx);
             }
             return grp_opc;
         }
@@ -312,7 +316,7 @@ Opcode fetch_opcode(Machine *machine, u8 opcode_num) {
             Opcode grp_opc = opcodes_grp3b[grp_idx];
             if (grp_opc.op_fn == 0) {
                 cpu_error_marker(machine, __FILE__, __LINE__);
-                cpu_note_int(machine, "group 3b opcode 0%02o not implemented", grp_idx);
+                cpu_note(machine, "group 3b opcode 0%02o not implemented", grp_idx);
             }
             return grp_opc;
 
@@ -322,7 +326,7 @@ Opcode fetch_opcode(Machine *machine, u8 opcode_num) {
             Opcode grp_opc = opcodes_grp4[grp_idx];
             if (grp_opc.op_fn == 0) {
                 cpu_error_marker(machine, __FILE__, __LINE__);
-                cpu_note_int(machine, "group 4 opcode 0%02o not implemented", grp_idx);
+                cpu_note(machine, "group 4 opcode 0%02o not implemented", grp_idx);
             }
             return grp_opc;
         }
@@ -331,7 +335,7 @@ Opcode fetch_opcode(Machine *machine, u8 opcode_num) {
             Opcode grp_opc = opcodes_grp5[grp_idx];
             if (grp_opc.op_fn == 0) {
                 cpu_error_marker(machine, __FILE__, __LINE__);
-                cpu_note_int(machine, "group 5 opcode 0%02o not implemented", grp_idx);
+                cpu_note(machine, "group 5 opcode 0%02o not implemented", grp_idx);
             }
             return grp_opc;
         }
@@ -341,78 +345,101 @@ Opcode fetch_opcode(Machine *machine, u8 opcode_num) {
     }
 }
 
-ReadOperand decode_read_op(Machine *machine, AddressOperandCode read_op) {
+Operand decode_read_op(Machine *machine, AddressOperandCode read_op) {
     CPU *cpu = machine->cpu;
     Memory *mem = machine->memory;
 
     switch (read_op) {
         case Implied: {
-            return (ReadOperand) {0};
+            return (Operand) {0};
         }
         case ONE: {
-            cpu->immediate_read.word = 1;
-            return (ReadOperand) {.word = (u16*) &cpu->immediate_read.word};
+            Operand op = {
+                    .word_cache = 1,
+                    .word = (u16 *) &op.word_cache
+            };
+            return op;
         }
         case IA: {
             u16 offset = read_memory_u16(cpu_ip(cpu), mem);
-            cpu->immediate_read.word = offset;
-            cpu->IP += 2;
             u32 addr = effective_addr(machine, offset, DS_SEGMENT);
-            return (ReadOperand) {.word = (u16 *) &mem->ram[addr]};
+            Operand op = {
+                    .word_cache = offset,
+                    .word = (u16 *) &mem->ram[addr],
+                    .addr = addr,
+            };
+            cpu->IP += 2;
+            return op;
         }
         case IB: {
             u32 addr = cpu_ip(cpu);
             u8 b = read_memory_u8(addr, mem);
-            cpu->immediate_read.byte = b;
+            Operand op = {
+                    .byte_cache = b,
+                    .addr = addr,
+                    .byte = (u8 *) &op.byte_cache
+            };
+
             cpu->IP += 1;
-            return (ReadOperand) {.byte = (u8 *) &cpu->immediate_read.byte};
+            return op;
         }
         case IB_SE: {
             u32 addr = cpu_ip(cpu);
             u8 lo_byte = read_memory_u8(addr, mem);
             u8 hi_byte = ((lo_byte & 0x80) == 0x80) ? 0xFF : 0x00;
-
             u16 word = (hi_byte << 8) | lo_byte;
-            cpu->immediate_read.word = word;
+            Operand op = {
+                    .word_cache = word,
+                    .word = (u16 *) &op.word_cache,
+                    .addr = addr,
+            };
             cpu->IP += 1;
-            return (ReadOperand) {.word = (u16 *) &cpu->immediate_read.word};
+            return op;
         }
         case IW: {
-            u16 w = read_memory_u16(cpu_ip(cpu), mem);
-            cpu->immediate_read.word = w;
+            u32 addr = cpu_ip(cpu);
+            u16 word = read_memory_u16(addr, mem);
+            Operand op = {
+                    .word_cache = word,
+                    .word = (u16 *) &op.word_cache,
+                    .addr = addr,
+            };
             cpu->IP += 2;
-            return (ReadOperand) {.word = (u16 *) &cpu->immediate_read.word};
+            return op;
         }
         case IDW: {
-            // fixme: hacky solution
+            // fixme: less hacky solution?
             u32 addr = cpu_ip(cpu);
             u16 w1 = read_memory_u16(addr, mem);
-            cpu->immediate_read.word = w1;
             u16 w2 = read_memory_u16(addr + 2, mem);
-            cpu->immediate_write.word = w2;
             cpu->IP += 4;
-            return (ReadOperand) {.word =  (u16 *) &mem->ram[addr]};
+            Operand op = {
+                    .dword_cache = (w2 << 16) | w1,  // pack value for disassembly
+                    .word = (u16 *) &mem->ram[addr],
+                    .addr = addr,
+            };
+            return op;
         }
         case R_AX: {
-            return (ReadOperand) {.word = &cpu->AX};
+            return (Operand) {.word = &cpu->AX};
         }
         case R_AL: {
-            return (ReadOperand) {.byte = &cpu->AL};
+            return (Operand) {.byte = &cpu->AL};
         }
         case R_BX: {
-            return (ReadOperand) {.word = &cpu->BX};
+            return (Operand) {.word = &cpu->BX};
         }
         case R_CX: {
-            return (ReadOperand) {.word = &cpu->CX};
+            return (Operand) {.word = &cpu->CX};
         }
         case R_CL: {
-            return (ReadOperand) {.byte = &cpu->CL};
+            return (Operand) {.byte = &cpu->CL};
         }
         case R_DX: {
-            return (ReadOperand) {.word = &cpu->DX};
+            return (Operand) {.word = &cpu->DX};
         }
         case R_DI: {
-            return (ReadOperand) {.word = &cpu->DI};
+            return (Operand) {.word = &cpu->DI};
         }
         case RB:
         case RW: {
@@ -421,7 +448,7 @@ ReadOperand decode_read_op(Machine *machine, AddressOperandCode read_op) {
                 op_size = WORD;
             }
             REG reg = (op_size << 3) | cpu->addr_mode.reg_sreg;
-            return get_read_register(machine, reg);
+            return get_register(machine, reg);
         }
         case RMB:
         case RMW: {
@@ -437,92 +464,96 @@ ReadOperand decode_read_op(Machine *machine, AddressOperandCode read_op) {
             u8 mode = cpu->addr_mode.mode;
             if (mode == 0) {
                 memory_mode.displacement_type = NO_DISP;
-                return get_read_memory(machine, memory_mode);
+                return get_operand(machine, memory_mode);
             } else if (mode == 1) {
                 memory_mode.displacement_type = BYTE_DISP;
-                return get_read_memory(machine, memory_mode);
+                return get_operand(machine, memory_mode);
             } else if (mode == 2) {
                 memory_mode.displacement_type = WORD_DISP;
-                return get_read_memory(machine, memory_mode);
+                return get_operand(machine, memory_mode);
             } else if (mode == 3) {
                 REG reg = (op_size << 3) | memory_mode.memory_mode;
-                return get_read_register(machine, reg);
+                return get_register(machine, reg);
             }
             cpu_error_marker(machine, __FILE__, __LINE__);
-            cpu_note_int(machine, "Unsupported mode %d", mode);
+            cpu_note(machine, "Unsupported mode %d", mode);
             cpu_error(machine, "Unhandled read RM%c mode", (op_size ? 'W' : 'B'));
         }
         case SR: {
             SegREG reg = cpu->addr_mode.reg_sreg;
-            return get_read_segment_register(machine, reg);
+            return get_segment_register(machine, reg);
         }
         default: {
             cpu_error_marker(machine, __FILE__, __LINE__);
-            cpu_error_int(machine, "unsupported read operation '%d'!", read_op);
+            cpu_error(machine, "unsupported read operation '%d'!", read_op);
         }
     }
 }
 
-WriteOperand decode_write_op(Machine *machine, AddressOperandCode write_op) {
+Operand decode_write_op(Machine *machine, AddressOperandCode write_op) {
     CPU *cpu = machine->cpu;
     Memory *mem = machine->memory;
 
     switch (write_op) {
         case Implied: {
-            return (WriteOperand) {0};
+            return (Operand) {0};
         }
         case IA: {
             // The instruction has an immediate word that is an address to a value
             u16 offset = read_memory_u16(cpu_ip(cpu), mem);
-            cpu->immediate_write.word = offset;
-            cpu->IP += 2;
             u32 addr = effective_addr(machine, offset, DS_SEGMENT);
-            return (WriteOperand) {.word = (u16 *) &mem->ram[addr]};
+            Operand op = {
+                    .word_cache = offset,
+                    .addr = addr,
+                    .word = (u16 *) &mem->ram[addr]
+            };
+            cpu->IP += 2;
+            return op;
         }
         case R_AX: {
-            return (WriteOperand) {.word =  &cpu->AX};
+            return (Operand) {.word =  &cpu->AX};
         }
         case R_AL: {
-            return (WriteOperand) {.byte =  &cpu->AL};
+            return (Operand) {.byte =  &cpu->AL};
         }
         case R_AH: {
-            return (WriteOperand) {.byte =  &cpu->AH};
+            return (Operand) {.byte =  &cpu->AH};
         }
         case R_BX: {
-            return (WriteOperand) {.word =  &cpu->BX};
+            return (Operand) {.word =  &cpu->BX};
         }
         case R_BL: {
-            return (WriteOperand) {.byte =  &cpu->BL};
+            return (Operand) {.byte =  &cpu->BL};
         }
         case R_CX: {
-            return (WriteOperand) {.word =  &cpu->CX};
+            return (Operand) {.word =  &cpu->CX};
         }
         case R_CL: {
-            return (WriteOperand) {.byte =  &cpu->CL};
+            return (Operand) {.byte =  &cpu->CL};
         }
         case R_CH: {
-            return (WriteOperand) {.byte =  &cpu->CH};
+            return (Operand) {.byte =  &cpu->CH};
         }
         case R_DX: {
-            return (WriteOperand) {.word =  &cpu->DX};
+            return (Operand) {.word =  &cpu->DX};
         }
         case R_DH: {
-            return (WriteOperand) {.byte =  &cpu->DH};
+            return (Operand) {.byte =  &cpu->DH};
         }
         case R_DL: {
-            return (WriteOperand) {.byte =  &cpu->DL};
+            return (Operand) {.byte =  &cpu->DL};
         }
         case R_BP: {
-            return (WriteOperand) {.word =  &cpu->BP};
+            return (Operand) {.word =  &cpu->BP};
         }
         case R_SP: {
-            return (WriteOperand) {.word =  &cpu->SP};
+            return (Operand) {.word =  &cpu->SP};
         }
         case R_SI: {
-            return (WriteOperand) {.word =  &cpu->SI};
+            return (Operand) {.word =  &cpu->SI};
         }
         case R_DI: {
-            return (WriteOperand) {.word =  &cpu->DI};
+            return (Operand) {.word =  &cpu->DI};
         }
         case RMB:
         case RMW: {
@@ -538,17 +569,17 @@ WriteOperand decode_write_op(Machine *machine, AddressOperandCode write_op) {
             u8 mode = cpu->addr_mode.mode;
             if (mode == 0) {
                 memory_mode.displacement_type = NO_DISP;
-                return get_write_memory(machine, memory_mode);
+                return get_operand(machine, memory_mode);
             } else if (mode == 1) {
                 memory_mode.displacement_type = BYTE_DISP;
-                return get_write_memory(machine, memory_mode);
+                return get_operand(machine, memory_mode);
             } else if (mode == 3) {
                 REG reg = (op_size << 3) | memory_mode.memory_mode;
-                return get_write_register(machine, reg);
+                return get_register(machine, reg);
             }
             cpu_error_marker(machine, __FILE__, __LINE__);
-            cpu_note_int(machine, "Unsupported mode %d", mode);
-            cpu_note_int(machine, "Current opcode 0x%02X", cpu->opcode);
+            cpu_note(machine, "Unsupported mode %d", mode);
+            cpu_note(machine, "Current opcode 0x%02X", cpu->opcode);
             cpu_peek(machine);
             cpu_error(machine, "Unhandled write RM%c mode", (op_size ? 'W' : 'B'));
 
@@ -560,104 +591,15 @@ WriteOperand decode_write_op(Machine *machine, AddressOperandCode write_op) {
                 op_size = WORD;
             }
             REG reg = (op_size << 3) | cpu->addr_mode.reg_sreg;
-            // printf("reg = %s [%d]\n", get_register_name(reg), reg);
-            return get_write_register(machine, reg);
+            return get_register(machine, reg);
         }
         case SR: {
             SegREG reg = cpu->addr_mode.reg_sreg;
-            return get_write_segment_register(machine, reg);
+            return get_segment_register(machine, reg);
         }
         default: {
             cpu_error_marker(machine, __FILE__, __LINE__);
-            cpu_error_int(machine, "unsupported write operation '%d'!", write_op);
-        }
-    }
-}
-
-static const MemoryMnemonic AOC_TABLE[AOC_COUNT] = {
-        [Implied] = {MMT_EMPTY, ""},
-        [ONE] = {.name ="1"},
-        [IA] = {MMT_POINTER | MMT_ADDRESS | MMT_SEGMENT_OVERRIDABLE, "$"},
-        [IB] = {MMT_VALUE_BYTE, "IB="},
-        [IB_SE] = {MMT_VALUE_BYTE, "IBSE="},
-        [IW] = {MMT_VALUE_WORD, "IW="},
-        [IDW] = {MMT_ADDRESS_32BIT, "$"},
-        [R_AX] = {.name ="AX"},
-        [R_AL] = {.name ="AL"},
-        [R_AH] = {.name ="AH"},
-        [R_BX] = {.name ="BX"},
-        [R_BL] = {.name ="BL"},
-        [R_CX] = {.name ="CX"},
-        [R_CL] = {.name ="CL"},
-        [R_CH] = {.name ="CH"},
-        [R_DX] = {.name ="DX"},
-        [R_DL] = {.name ="DL"},
-        [R_DH] = {.name ="DH"},
-        [R_BP] = {.name ="BP"},
-        [R_SP] = {.name ="SP"},
-        [R_SI] = {.name ="SI"},
-        [R_DI] = {.name ="DI"},
-};
-
-MemoryMnemonic decode_aoc(Machine *machine, AddressOperandCode aoc) {
-    CPU *cpu = machine->cpu;
-
-    MemoryMnemonic repr = AOC_TABLE[aoc];
-    if (repr.name) {
-        return repr;
-    }
-    switch (aoc) {
-//        case ImmOpc: {
-//            Opcode opc = opcodes[machine->cpu->immediate_read.byte];
-//            if (opc.name) {
-//                return (MemoryMnemonic ) {.name=opc.name};
-//            }
-//            return  (MemoryMnemonic ) {.name="Unknown Immediate Opcode"};
-//        }
-        case RB:
-        case RW: {
-            bool word = false;
-            if (aoc == RW) {
-                word = true;
-            }
-            REG reg = (word << 3) | cpu->addr_mode.reg_sreg;
-            return get_register_name(reg);
-        }
-        case RMB:
-        case RMW: {
-            bool word = false;
-            if (aoc == RMW) {
-                word = true;
-            }
-            u8 mode = cpu->addr_mode.mode;
-            if (mode == 0) {
-                MemoryModeTable mem_mode = cpu->addr_mode.reg_mem;
-                return get_memory_mode_name(mem_mode, NO_DISP);
-
-            } else if (mode == 1) {
-                MemoryModeTable mem_mode = cpu->addr_mode.reg_mem;
-                return get_memory_mode_name(mem_mode, BYTE_DISP);
-
-            } else if (mode == 2) {
-                MemoryModeTable mem_mode = cpu->addr_mode.reg_mem;
-                return get_memory_mode_name(mem_mode, WORD_DISP);
-
-            } else if (mode == 3) {
-                REG reg = (word << 3) | cpu->addr_mode.reg_mem;
-                return get_register_name(reg);
-            }
-            cpu_error_marker(machine, __FILE__, __LINE__);
-            cpu_note_int(machine, "Unsupported mode %d", mode);
-            cpu_error(machine, "Unhandled RM%c mode", (word ? 'W' : 'B'));
-        }
-        case SR: {
-            SegREG reg = cpu->addr_mode.reg_sreg;
-            return get_segment_register_name(reg);
-        }
-
-        default: {
-            cpu_error_marker(machine, __FILE__, __LINE__);
-            cpu_error(machine, "Unhandled AddressOperandCode mode '%d'", aoc);
+            cpu_error(machine, "unsupported write operation '%d'!", write_op);
         }
     }
 }
@@ -665,5 +607,3 @@ MemoryMnemonic decode_aoc(Machine *machine, AddressOperandCode aoc) {
 u8 peek_opcode(Machine *machine) {
     return machine->memory->ram[cpu_ip(machine->cpu)];
 }
-
-

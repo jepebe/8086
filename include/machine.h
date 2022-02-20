@@ -8,6 +8,10 @@
 typedef struct {
     CPU *cpu;
     Memory *memory;
+
+    // some default operands
+    Operand IP;
+    Operand CS;
 } Machine;
 
 Machine machine_create();

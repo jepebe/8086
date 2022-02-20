@@ -95,7 +95,7 @@ void test_enums(Tester *tester) {
 void test_result(Tester *tester) {
     test_section("Operand Union");
 
-    ReadOperand op;
+    Operand op;
     u16 temp = 0xDECA;
     op.word = &temp;
 

@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include "debug.h"
 
 void dump_ram(Machine *machine) {
@@ -64,41 +65,9 @@ void cpu_instruction_context(Machine *machine) {
     }
 }
 
-NO_RETURN void cpu_error(Machine *machine, char *message, int value) {
-    printf("\x1b[0;31m");
-    printf("[$%05X] Error: ", cpu_ip(machine->cpu));
-    printf(message, value);
-    printf("\x1b[0m\n");
-    cpu_instruction_context(machine);
-
-    exit(1);
-}
-
-void cpu_note_int(Machine *machine, char *message, int value) {
-    printf("\x1b[0;33m");
-    printf("[$%05X] Note: ", cpu_ip(machine->cpu));
-    printf(message, value);
-    printf("\x1b[0m\n");
-}
-
-void cpu_note_u32(Machine *machine, char *message, u32 value) {
-    printf("\x1b[0;33m");
-    printf("[$%05X] Note: ", cpu_ip(machine->cpu));
-    printf(message, value);
-    printf("\x1b[0m\n");
-}
-
-
 void cpu_error_marker(Machine *machine, char *file, int line) {
     printf("\x1b[0;33m");
     printf("[$%05X] Note: %s:%d", cpu_ip(machine->cpu), file, line);
-    printf("\x1b[0m\n");
-}
-
-void cpu_note_str(Machine *machine, char *message, char *value) {
-    printf("\x1b[0;33m");
-    printf("[$%05X] Note: ", cpu_ip(machine->cpu));
-    printf(message, value);
     printf("\x1b[0m\n");
 }
 
@@ -125,24 +94,6 @@ char *flags_to_str(Flags flags) {
     res[1] = flags.DF ? 'd' : '.';
     res[0] = flags.OF ? 'o' : '.';
     return res;
-}
-
-NO_RETURN void cpu_error_int(Machine *machine, char *message, int value) {
-    printf("\x1b[0;31m");
-    printf("[$%05X] Error: ", cpu_ip(machine->cpu));
-    printf(message, value);
-    printf("\n");
-    cpu_instruction_context(machine);
-    exit(1);
-}
-
-NO_RETURN void cpu_error_str(Machine *machine, char *message, char *value) {
-    printf("\x1b[0;31m");
-    printf("[$%05X] Error: ", cpu_ip(machine->cpu));
-    printf(message, value);
-    printf("\n");
-    cpu_instruction_context(machine);
-    exit(1);
 }
 
 void memory_peek(Machine *machine, u16 segment) {
@@ -188,3 +139,25 @@ void print_cpu(Machine *machine) {
     printf("\x1b[0m");
 }
 
+void cpu_note(Machine *machine, char *message, ...) {
+    va_list argp;
+    printf("\x1b[0;33m");
+    printf("[$%05X] Note: ", cpu_ip(machine->cpu));
+    va_start(argp, message);
+    vprintf(message, argp);
+    va_end(argp);
+    printf("\x1b[0m\n");
+}
+
+NO_RETURN void cpu_error(Machine *machine, char *message, ...) {
+    va_list argp;
+    printf("\x1b[0;31m");
+    printf("[$%05X] Error: ", cpu_ip(machine->cpu));
+    va_start(argp, message);
+    vprintf(message, argp);
+    va_end(argp);
+    printf("\x1b[0m\n");
+    cpu_instruction_context(machine);
+
+    exit(1);
+}

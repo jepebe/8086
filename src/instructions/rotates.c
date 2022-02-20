@@ -1,9 +1,9 @@
 #include "instructions.h"
 
-void op_rcl_w(Machine *m, ReadOperand rop, WriteOperand wop) {
+void op_rcl_w(Machine *m, Operand *rop, Operand *wop) {
     // overflow applies to rotate of 1 and where the carry bit and MSB are different
-    u16 a = *wop.word;
-    u8 n = *rop.byte & 0x1F;
+    u16 a = *wop->word;
+    u8 n = *rop->byte & 0x1F;
     if (n == 0) {
         return;
     }
@@ -19,13 +19,13 @@ void op_rcl_w(Machine *m, ReadOperand rop, WriteOperand wop) {
         m->cpu->flags.OF = m->cpu->flags.CF ^ ((a & 0x8000) == 0x8000);
     }
 
-    *wop.word = a;
+    *wop->word = a;
 }
 
-void op_rcl_b(Machine *m, ReadOperand rop, WriteOperand wop) {
+void op_rcl_b(Machine *m, Operand *rop, Operand *wop) {
     // overflow applies to rotate of 1 and where the carry bit and MSB are different
-    u8 a = *wop.byte;
-    u8 n = *rop.byte & 0x1F;
+    u8 a = *wop->byte;
+    u8 n = *rop->byte & 0x1F;
     if (n == 0) {
         return;
     }
@@ -41,13 +41,13 @@ void op_rcl_b(Machine *m, ReadOperand rop, WriteOperand wop) {
         m->cpu->flags.OF = m->cpu->flags.CF ^ ((a & 0x80) == 0x80);
     }
 
-    *wop.byte = a;
+    *wop->byte = a;
 }
 
-void op_rcr_w(Machine *m, ReadOperand rop, WriteOperand wop) {
+void op_rcr_w(Machine *m, Operand *rop, Operand *wop) {
     // overflow applies to rotate of 1 and where the carry bit and MSB are different
-    u16 a = *wop.word;
-    u8 n = *rop.byte & 0x1F;
+    u16 a = *wop->word;
+    u8 n = *rop->byte & 0x1F;
     if (n == 0) {
         return;
     }
@@ -63,13 +63,13 @@ void op_rcr_w(Machine *m, ReadOperand rop, WriteOperand wop) {
         m->cpu->flags.OF = ((a & 0x8000) == 0x8000) ^ ((a & 0x4000) == 0x4000);
     }
 
-    *wop.word = a;
+    *wop->word = a;
 }
 
-void op_rcr_b(Machine *m, ReadOperand rop, WriteOperand wop) {
+void op_rcr_b(Machine *m, Operand *rop, Operand *wop) {
     // overflow applies to rotate of 1 and where the carry bit and MSB are different
-    u16 a = *wop.byte;
-    u8 n = *rop.byte & 0x1F;
+    u16 a = *wop->byte;
+    u8 n = *rop->byte & 0x1F;
     if (n == 0) {
         return;
     }
@@ -85,13 +85,13 @@ void op_rcr_b(Machine *m, ReadOperand rop, WriteOperand wop) {
         m->cpu->flags.OF = ((a & 0x80) == 0x80) ^ ((a & 0x40) == 0x40);
     }
 
-    *wop.byte = a;
+    *wop->byte = a;
 }
 
-void op_rol_w(Machine *m, ReadOperand rop, WriteOperand wop) {
+void op_rol_w(Machine *m, Operand *rop, Operand *wop) {
     // overflow applies to rotate of 1 and where the carry bit and MSB are different
-    u16 a = *wop.word;
-    u8 n = *rop.byte & 0x1F;
+    u16 a = *wop->word;
+    u8 n = *rop->byte & 0x1F;
     if (n == 0) {
         return;
     }
@@ -106,13 +106,13 @@ void op_rol_w(Machine *m, ReadOperand rop, WriteOperand wop) {
         m->cpu->flags.OF = m->cpu->flags.CF ^ ((a & 0x8000) == 0x8000);
     }
 
-    *wop.word = a;
+    *wop->word = a;
 }
 
-void op_rol_b(Machine *m, ReadOperand rop, WriteOperand wop) {
+void op_rol_b(Machine *m, Operand *rop, Operand *wop) {
     // overflow applies to rotate of 1 and where the carry bit and MSB are different
-    u16 a = *wop.byte;
-    u8 n = *rop.byte & 0x1F;
+    u16 a = *wop->byte;
+    u8 n = *rop->byte & 0x1F;
     if (n == 0) {
         return;
     }
@@ -127,13 +127,13 @@ void op_rol_b(Machine *m, ReadOperand rop, WriteOperand wop) {
         m->cpu->flags.OF = m->cpu->flags.CF ^ ((a & 0x80) == 0x80);
     }
 
-    *wop.byte = a;
+    *wop->byte = a;
 }
 
-void op_ror_w(Machine *m, ReadOperand rop, WriteOperand wop) {
+void op_ror_w(Machine *m, Operand *rop, Operand *wop) {
     // overflow applies to rotate of 1 and where MSB1 and MSB2 are different
-    u16 a = *wop.word;
-    u8 n = *rop.byte & 0x1F;
+    u16 a = *wop->word;
+    u8 n = *rop->byte & 0x1F;
     if (n == 0) {
         return;
     }
@@ -148,13 +148,13 @@ void op_ror_w(Machine *m, ReadOperand rop, WriteOperand wop) {
         m->cpu->flags.OF = ((a & 0x8000) == 0x8000) ^ ((a & 0x4000) == 0x4000);
     }
 
-    *wop.word = a;
+    *wop->word = a;
 }
 
-void op_ror_b(Machine *m, ReadOperand rop, WriteOperand wop) {
+void op_ror_b(Machine *m, Operand *rop, Operand *wop) {
     // overflow applies to rotate of 1 and where MSB1 and MSB2 are different
-    u16 a = *wop.byte;
-    u8 n = *rop.byte & 0x1F;
+    u16 a = *wop->byte;
+    u8 n = *rop->byte & 0x1F;
     if (n == 0) {
         return;
     }
@@ -169,5 +169,5 @@ void op_ror_b(Machine *m, ReadOperand rop, WriteOperand wop) {
         m->cpu->flags.OF = ((a & 0x80) == 0x80) ^ ((a & 0x40) == 0x40);
     }
 
-    *wop.byte = a;
+    *wop->byte = a;
 }

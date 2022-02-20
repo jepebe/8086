@@ -65,7 +65,7 @@ typedef enum {
 } AddressOperandCode;
 
 typedef struct {
-    void (*op_fn)(Machine *m, ReadOperand rop, WriteOperand wop); // operation
+    void (*op_fn)(Machine *m, Operand *rop, Operand *wop); // operation
     AddressOperandCode write_op;  // write pointer
     AddressOperandCode read_op;  //
     const char *name;        // opcode mnemonic
@@ -79,7 +79,6 @@ extern const Opcode opcodes_grp3b[010];
 extern const Opcode opcodes_grp4[010];
 extern const Opcode opcodes_grp5[010];
 
-MemoryMnemonic decode_aoc(Machine *machine, AddressOperandCode aoc);
 
 bool has_mod_rm_byte(Opcode opcode);
 
@@ -89,6 +88,6 @@ u8 peek_opcode(Machine *machine);
 
 Opcode fetch_opcode(Machine *machine, u8 opcode_num);
 
-ReadOperand decode_read_op(Machine *machine, AddressOperandCode read_op);
+Operand decode_read_op(Machine *machine, AddressOperandCode read_op);
 
-WriteOperand decode_write_op(Machine *machine, AddressOperandCode write_op);
+Operand decode_write_op(Machine *machine, AddressOperandCode write_op);
