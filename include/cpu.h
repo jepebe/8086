@@ -54,6 +54,19 @@ typedef union {
 } Flags;
 
 typedef struct {
+    union {
+        u16 *word;
+        u8 *byte;
+    };
+    union {
+        u32 dword_cache;
+        u16 word_cache;
+        u8 byte_cache;
+    };
+    s16 displacement;
+} Operand;
+
+typedef struct {
     // Main registers
     union {
         u16 AX; // primary accumulator
@@ -114,23 +127,15 @@ typedef struct {
     AddrMode addr_mode;
     bool halted;
 
+    Operand read_op;
+    Operand write_op;
+
     SegmentOverride segment_override;
     Repeat repeat;
 
 } CPU;
 
-typedef struct {
-    union {
-        u16 *word;
-        u8 *byte;
-    };
-    union {
-        u32 dword_cache;
-        u16 word_cache;
-        u8 byte_cache;
-    };
-    s16 displacement;
-} Operand;
+
 
 void cpu_reset(CPU *cpu);
 

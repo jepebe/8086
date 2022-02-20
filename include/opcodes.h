@@ -90,6 +90,6 @@ u8 peek_opcode(Machine *machine);
 
 Opcode fetch_opcode(Machine *machine, u8 opcode_num);
 
-Operand decode_read_op(Machine *machine, AddressOperandCode read_op);
+void decode_read_op(Machine *machine, AddressOperandCode read_op);
 
-Operand decode_write_op(Machine *machine, AddressOperandCode write_op);
+void decode_write_op(Machine *machine, AddressOperandCode write_op);

@@ -105,8 +105,12 @@ void op_call_direct(Machine *m, Operand *rop, Operand *wop) {
 void op_call_relative(Machine *m, Operand *rop, Operand *wop) {
     // Call near, relative, displacement relative to next instruction.
     (void) wop;
+    cpu_note(m, "JUMP rel=%d", (s16) *(rop->word));
+    cpu_note(m, "JUMP rel=%d", (s16) *(rop->word));
+    dump_cpu(m);
     op_push(m, &m->IP, NULL);
     m->cpu->IP += (s16) *(rop->word);
+    dump_cpu(m);
 }
 
 void op_call_far(Machine *m, Operand *rop, Operand *wop) {

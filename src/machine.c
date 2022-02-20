@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "machine.h"
 #include "opcodes.h"
 #include "debug.h"
@@ -59,17 +60,20 @@ void machine_tick(Machine *m) {
         if (has_mod_rm_byte(opcode)) {
             fetch_addressing_mode(m);
         }
-        Operand out = decode_write_op(m, opcode.write_op);
-        Operand in = decode_read_op(m, opcode.read_op);
+        decode_write_op(m, opcode.write_op);
+        decode_read_op(m, opcode.read_op);
 
-        opcode.op_fn(m, &in, &out);
+        Operand *read_op = &m->cpu->read_op;
+        Operand *write_op = &m->cpu->write_op;
 
-        disassemble_instruction(m, addr, opcode_num, opcode, &out, &in);
+        opcode.op_fn(m, read_op, write_op);
+
+        disassemble_instruction(m, addr, opcode_num, opcode, write_op, read_op);
     } else {
         cpu_error_marker(m, __FILE__, __LINE__);
         cpu_error(m, "opcode 0x%02X not implemented", opcode_num);
     }
-//    usleep(1000 * 50);
+    //usleep(1000 * 50);
     //print_stack(m);
     //dump_cpu(m);
     //cpu_instruction_context(m);

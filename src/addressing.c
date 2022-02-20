@@ -10,58 +10,78 @@ AddrMode peek_addressing_mode(Machine *machine) {
     return (AddrMode) {.opcode = machine->memory->ram[cpu_ip(machine->cpu)]};
 }
 
-Operand get_register(Machine *machine, REG reg) {
+void decode_register(Machine *machine, REG reg, Operand *op) {
     CPU *cpu = machine->cpu;
     switch (reg) {
         case AL:
-            return (Operand) {.byte = &cpu->AL};
+            op->byte = &cpu->AL;
+            break;
         case CL:
-            return (Operand) {.byte = &cpu->CL};
+            op->byte = &cpu->CL;
+            break;
         case DL:
-            return (Operand) {.byte = &cpu->DL};
+            op->byte = &cpu->DL;
+            break;
         case BL:
-            return (Operand) {.byte = &cpu->BL};
+            op->byte = &cpu->BL;
+            break;
         case AH:
-            return (Operand) {.byte = &cpu->AH};
+            op->byte = &cpu->AH;
+            break;
         case CH:
-            return (Operand) {.byte = &cpu->CH};
+            op->byte = &cpu->CH;
+            break;
         case DH:
-            return (Operand) {.byte = &cpu->DH};
+            op->byte = &cpu->DH;
+            break;
         case BH:
-            return (Operand) {.byte = &cpu->BH};
+            op->byte = &cpu->BH;
+            break;
         case AX:
-            return (Operand) {.word = &cpu->AX};
+            op->word = &cpu->AX;
+            break;
         case CX:
-            return (Operand) {.word = &cpu->CX};
+            op->word = &cpu->CX;
+            break;
         case DX:
-            return (Operand) {.word = &cpu->DX};
+            op->word = &cpu->DX;
+            break;
         case BX:
-            return (Operand) {.word = &cpu->BX};
+            op->word = &cpu->BX;
+            break;
         case SP:
-            return (Operand) {.word = &cpu->SP};
+            op->word = &cpu->SP;
+            break;
         case BP:
-            return (Operand) {.word = &cpu->BP};
+            op->word = &cpu->BP;
+            break;
         case SI:
-            return (Operand) {.word = &cpu->SI};
+            op->word = &cpu->SI;
+            break;
         case DI:
-            return (Operand) {.word = &cpu->DI};
+            op->word = &cpu->DI;
+            break;
         default:
             cpu_error_marker(machine, __FILE__, __LINE__);
             cpu_error(machine, "Unknown register type '%d'", reg);
     }
 }
 
-Operand get_segment_register(Machine *machine, SegREG reg) {
+void decode_segment_register(Machine *machine, SegREG reg, Operand *op) {
     CPU *cpu = machine->cpu;
     switch (reg) {
         case ES:
-            return (Operand) {.word = &cpu->ES};
+            op->word = &cpu->ES;
+            break;
         case CS:
-            return (Operand) {.word = &cpu->CS};
+            op->word = &cpu->CS;
+            break;
         case SS:
-            return (Operand) {.word = &cpu->SS};
+            op->word = &cpu->SS;
+            break;
         case DS:
-            return (Operand) {.word = &cpu->DS};
+            op->word = &cpu->DS;
+            break;
         default:
             cpu_error_marker(machine, __FILE__, __LINE__);
             cpu_error(machine, "Unknown segment register type '%d'", reg);
@@ -186,31 +206,27 @@ static u16 displace_address(Machine *machine, MemoryMode mode, s16 displacement)
     return offset;
 }
 
-Operand get_operand(Machine *m, MemoryMode mode) {
-    Memory *mem = m->memory;
+void decode_operand(Machine *machine, MemoryMode mode, Operand *op) {
+    Memory *mem = machine->memory;
 
-    s16 displacement = get_displacement(m, mode);
-    u16 offset = displace_address(m, mode, displacement);
-    SegmentOverride default_segment = default_displacement_segment(m, mode);
-    u32 addr = effective_addr(m, offset, default_segment);
+    s16 displacement = get_displacement(machine, mode);
+    u16 offset = displace_address(machine, mode, displacement);
+    SegmentOverride default_segment = default_displacement_segment(machine, mode);
+    u32 addr = effective_addr(machine, offset, default_segment);
 
-    Operand op = {
-            .displacement = displacement,
-            .word_cache = offset,
-//            .addr = offset
-    };
+    op->displacement = displacement;
+    op->word_cache = offset;
 
     switch (mode.operand_size) {
         case BYTE:
-            op.byte = (u8 *) &mem->ram[addr];
+            op->byte = (u8 *) &mem->ram[addr];
             break;
         case WORD:
-            op.word = (u16 *) &mem->ram[addr];
+            op->word = (u16 *) &mem->ram[addr];
             break;
         default: {
-            cpu_error_marker(m, __FILE__, __LINE__);
-            cpu_error(m, "Unknown operand size '%d'", mode.operand_size);
+            cpu_error_marker(machine, __FILE__, __LINE__);
+            cpu_error(machine, "Unknown operand size '%d'", mode.operand_size);
         }
     }
-    return op;
 }

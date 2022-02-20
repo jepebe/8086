@@ -60,10 +60,10 @@ void fetch_addressing_mode(Machine *machine);
 
 AddrMode peek_addressing_mode(Machine *machine);
 
-Operand get_register(Machine *machine, REG reg);
+void decode_register(Machine *machine, REG reg, Operand *op);
 
-Operand get_segment_register(Machine *machine, SegREG reg);
+void decode_segment_register(Machine *machine, SegREG reg, Operand *op);
 
-Operand get_operand(Machine *machine, MemoryMode mode);
+void decode_operand(Machine *machine, MemoryMode mode, Operand *op);
 
 //Operand get_write_memory(Machine *machine, MemoryMode mode);

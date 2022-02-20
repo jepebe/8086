@@ -355,63 +355,59 @@ Opcode fetch_opcode(Machine *machine, u8 opcode_num) {
     }
 }
 
-Operand decode_read_op(Machine *machine, AddressOperandCode read_op) {
+void decode_read_op(Machine *machine, AddressOperandCode read_op) {
     CPU *cpu = machine->cpu;
     Memory *mem = machine->memory;
 
+    Operand *op = &cpu->read_op;
+    op->dword_cache = 0;
+    op->displacement = 0;
+    op->word = 0;
+
     switch (read_op) {
         case Implied: {
-            return (Operand) {0};
+            break;
         }
         case ONE: {
-            Operand op = {
-                    .word_cache = 1,
-                    .word = (u16 *) &op.word_cache
-            };
-            return op;
+            op->word_cache = 1;
+            op->word = (u16 *) &op->word_cache;
+            break;
         }
         case IA: {
             u16 offset = read_memory_u16(cpu_ip(cpu), mem);
             u32 addr = effective_addr(machine, offset, DS_SEGMENT);
-            Operand op = {
-                    .word_cache = offset,
-                    .word = (u16 *) &mem->ram[addr],
-            };
+
+            op->word_cache = offset;
+            op->word = (u16 *) &mem->ram[addr];
+
             cpu->IP += 2;
-            return op;
+            break;
         }
         case IB: {
             u32 addr = cpu_ip(cpu);
             u8 b = read_memory_u8(addr, mem);
-            Operand op = {
-                    .byte_cache = b,
-                    .byte = (u8 *) &op.byte_cache
-            };
-
+            op->byte_cache = b;
+            op->byte = (u8 *) &op->byte_cache;
             cpu->IP += 1;
-            return op;
+            break;
         }
         case IB_SE: {
             u32 addr = cpu_ip(cpu);
             u8 lo_byte = read_memory_u8(addr, mem);
             u8 hi_byte = ((lo_byte & 0x80) == 0x80) ? 0xFF : 0x00;
             u16 word = (hi_byte << 8) | lo_byte;
-            Operand op = {
-                    .word_cache = word,
-                    .word = (u16 *) &op.word_cache,
-            };
+            op->word_cache = word;
+            op->word = (u16 *) &op->word_cache;
             cpu->IP += 1;
-            return op;
+            break;
         }
         case IW: {
             u32 addr = cpu_ip(cpu);
             u16 word = read_memory_u16(addr, mem);
-            Operand op = {
-                    .word_cache = word,
-                    .word = (u16 *) &op.word_cache,
-            };
+            op->word_cache = word;
+            op->word = (u16 *) &op->word_cache;
             cpu->IP += 2;
-            return op;
+            break;
         }
         case IDW: {
             // fixme: less hacky solution?
@@ -419,35 +415,41 @@ Operand decode_read_op(Machine *machine, AddressOperandCode read_op) {
             u16 w1 = read_memory_u16(addr, mem);
             u16 w2 = read_memory_u16(addr + 2, mem);
             cpu->IP += 4;
-            Operand op = {
-                    .dword_cache = (w2 << 16) | w1,  // pack value for disassembly
-                    .word = (u16 *) &mem->ram[addr],
-            };
-            return op;
+            op->dword_cache = (w2 << 16) | w1;  // pack value for disassembly
+            op->word = (u16 *) &mem->ram[addr];
+            break;
         }
         case R_AX: {
-            return (Operand) {.word = &cpu->AX};
+            op->word = &cpu->AX;
+            break;
         }
         case R_AL: {
-            return (Operand) {.byte = &cpu->AL};
+            op->byte = &cpu->AL;
+            break;
         }
         case R_BX: {
-            return (Operand) {.word = &cpu->BX};
+            op->word = &cpu->BX;
+            break;
         }
         case R_CX: {
-            return (Operand) {.word = &cpu->CX};
+            op->word = &cpu->CX;
+            break;
         }
         case R_CL: {
-            return (Operand) {.byte = &cpu->CL};
+            op->byte = &cpu->CL;
+            break;
         }
         case R_DX: {
-            return (Operand) {.word = &cpu->DX};
+            op->word = &cpu->DX;
+            break;
         }
         case R_DI: {
-            return (Operand) {.word = &cpu->DI};
+            op->word = &cpu->DI;
+            break;
         }
         case R_ES: {
-            return (Operand) {.word = &cpu->ES};
+            op->word = &cpu->ES;
+            break;
         }
         case RB:
         case RW: {
@@ -456,7 +458,8 @@ Operand decode_read_op(Machine *machine, AddressOperandCode read_op) {
                 op_size = WORD;
             }
             REG reg = (op_size << 3) | cpu->addr_mode.reg_sreg;
-            return get_register(machine, reg);
+            decode_register(machine, reg, op);
+            break;
         }
         case RMB:
         case RMW: {
@@ -472,16 +475,20 @@ Operand decode_read_op(Machine *machine, AddressOperandCode read_op) {
             u8 mode = cpu->addr_mode.mode;
             if (mode == 0) {
                 memory_mode.displacement_type = NO_DISP;
-                return get_operand(machine, memory_mode);
+                decode_operand(machine, memory_mode, op);
+                break;
             } else if (mode == 1) {
                 memory_mode.displacement_type = BYTE_DISP;
-                return get_operand(machine, memory_mode);
+                decode_operand(machine, memory_mode, op);
+                break;
             } else if (mode == 2) {
                 memory_mode.displacement_type = WORD_DISP;
-                return get_operand(machine, memory_mode);
+                decode_operand(machine, memory_mode, op);
+                break;
             } else if (mode == 3) {
                 REG reg = (op_size << 3) | memory_mode.memory_mode;
-                return get_register(machine, reg);
+                decode_register(machine, reg, op);
+                break;
             }
             cpu_error_marker(machine, __FILE__, __LINE__);
             cpu_note(machine, "Unsupported mode %d", mode);
@@ -489,7 +496,8 @@ Operand decode_read_op(Machine *machine, AddressOperandCode read_op) {
         }
         case SR: {
             SegREG reg = cpu->addr_mode.reg_sreg;
-            return get_segment_register(machine, reg);
+            decode_segment_register(machine, reg, op);
+            break;
         }
         default: {
             cpu_error_marker(machine, __FILE__, __LINE__);
@@ -498,72 +506,91 @@ Operand decode_read_op(Machine *machine, AddressOperandCode read_op) {
     }
 }
 
-Operand decode_write_op(Machine *machine, AddressOperandCode write_op) {
+void decode_write_op(Machine *machine, AddressOperandCode write_op) {
     CPU *cpu = machine->cpu;
     Memory *mem = machine->memory;
 
+    Operand *op = &cpu->write_op;
+    op->dword_cache = 0;
+    op->displacement = 0;
+    op->word = 0;
+
     switch (write_op) {
         case Implied: {
-            return (Operand) {0};
+            break;
         }
         case IA: {
             // The instruction has an immediate word that is an address to a value
             u16 offset = read_memory_u16(cpu_ip(cpu), mem);
             u32 addr = effective_addr(machine, offset, DS_SEGMENT);
-            Operand op = {
-                    .word_cache = offset,
-                    .word = (u16 *) &mem->ram[addr]
-            };
+            op->word_cache = offset;
+            op->word = (u16 *) &mem->ram[addr];
             cpu->IP += 2;
-            return op;
+            break;
         }
         case R_AX: {
-            return (Operand) {.word =  &cpu->AX};
+            op->word =  &cpu->AX;
+            break;
         }
         case R_AL: {
-            return (Operand) {.byte =  &cpu->AL};
+            op->byte =  &cpu->AL;
+            break;
         }
         case R_AH: {
-            return (Operand) {.byte =  &cpu->AH};
+            op->byte =  &cpu->AH;
+            break;
         }
         case R_BX: {
-            return (Operand) {.word =  &cpu->BX};
+            op->word =  &cpu->BX;
+            break;
         }
         case R_BL: {
-            return (Operand) {.byte =  &cpu->BL};
+            op->byte =  &cpu->BL;
+            break;
         }
         case R_CX: {
-            return (Operand) {.word =  &cpu->CX};
+            op->word =  &cpu->CX;
+            break;
         }
         case R_CL: {
-            return (Operand) {.byte =  &cpu->CL};
+            op->byte =  &cpu->CL;
+            break;
         }
         case R_CH: {
-            return (Operand) {.byte =  &cpu->CH};
+            op->byte =  &cpu->CH;
+            break;
         }
         case R_DX: {
-            return (Operand) {.word =  &cpu->DX};
+            op->word =  &cpu->DX;
+            break;
         }
         case R_DH: {
-            return (Operand) {.byte =  &cpu->DH};
+            op->byte =  &cpu->DH;
+            break;
         }
         case R_DL: {
-            return (Operand) {.byte =  &cpu->DL};
+            op->byte =  &cpu->DL;
+            break;
         }
         case R_BP: {
-            return (Operand) {.word =  &cpu->BP};
+            op->word =  &cpu->BP;
+            break;
         }
         case R_SP: {
-            return (Operand) {.word =  &cpu->SP};
+            op->word =  &cpu->SP;
+            break;
         }
         case R_SI: {
-            return (Operand) {.word =  &cpu->SI};
+            op->word =  &cpu->SI;
+            break;
         }
         case R_DI: {
-            return (Operand) {.word =  &cpu->DI};
+            op->word =  &cpu->DI;
+            break;
         }
         case R_ES: {
-            return (Operand) {.word =  &cpu->ES};
+            op->word =  &cpu->ES;
+            break;
         }
         case RMB:
         case RMW: {
@@ -579,13 +606,16 @@ Operand decode_write_op(Machine *machine, AddressOperandCode write_op) {
             u8 mode = cpu->addr_mode.mode;
             if (mode == 0) {
                 memory_mode.displacement_type = NO_DISP;
-                return get_operand(machine, memory_mode);
+                decode_operand(machine, memory_mode, op);
+                break;
             } else if (mode == 1) {
                 memory_mode.displacement_type = BYTE_DISP;
-                return get_operand(machine, memory_mode);
+                decode_operand(machine, memory_mode, op);
+                break;
             } else if (mode == 3) {
                 REG reg = (op_size << 3) | memory_mode.memory_mode;
-                return get_register(machine, reg);
+                decode_register(machine, reg, op);
+                break;
             }
             cpu_error_marker(machine, __FILE__, __LINE__);
             cpu_note(machine, "Unsupported mode %d", mode);
@@ -601,11 +631,13 @@ Operand decode_write_op(Machine *machine, AddressOperandCode write_op) {
                 op_size = WORD;
             }
             REG reg = (op_size << 3) | cpu->addr_mode.reg_sreg;
-            return get_register(machine, reg);
+            decode_register(machine, reg, op);
+            break;
         }
         case SR: {
             SegREG reg = cpu->addr_mode.reg_sreg;
-            return get_segment_register(machine, reg);
+            decode_segment_register(machine, reg, op);
+            break;
         }
         default: {
             cpu_error_marker(machine, __FILE__, __LINE__);

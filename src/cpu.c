@@ -8,6 +8,8 @@ void cpu_reset(CPU *cpu) {
     cpu->halted = false;
     cpu->flags.word = 0x0002; // set first unused bit to 1
     cpu->segment_override = DEFAULT_SEGMENT;
+    cpu->read_op = (Operand) {0};
+    cpu->write_op = (Operand) {0};
 }
 
 u32 cpu_ip(CPU *cpu) {
