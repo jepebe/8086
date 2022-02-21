@@ -149,14 +149,22 @@ void op_push(Machine *m, Operand *rop, Operand *wop);
 
 void op_pop(Machine *m, Operand *rop, Operand *wop);
 
+
+// control
+
+/// Halt
 void op_hlt(Machine *m, Operand *rop, Operand *wop);
 
+/// Clear CF flag.
 void op_clc(Machine *m, Operand *rop, Operand *wop);
 
+/// Clear DF flag.
 void op_cld(Machine *m, Operand *rop, Operand *wop);
 
+/// Clear interrupt flag; interrupts disabled when interrupt flag cleared.
 void op_cli(Machine *m, Operand *rop, Operand *wop);
 
+/// Complement CF flag.
 void op_cmc(Machine *m, Operand *rop, Operand *wop);
 
 void op_stc(Machine *m, Operand *rop, Operand *wop);
@@ -165,7 +173,15 @@ void op_std(Machine *m, Operand *rop, Operand *wop);
 
 void op_sti(Machine *m, Operand *rop, Operand *wop);
 
+// One byte no-operation instruction.
 void op_nop(Machine *m, Operand *rop, Operand *wop);
+
+// segments
+void op_es(Machine *m, Operand *rop, Operand *wop);
+
+void op_cs(Machine *m, Operand *rop, Operand *wop);
+
+void op_ss(Machine *m, Operand *rop, Operand *wop);
 
 
 void op_shl_w(Machine *m, Operand *rop, Operand *wop);
@@ -272,14 +288,6 @@ void op_stos_w(Machine *m, Operand *rop, Operand *wop);
 void op_repz(Machine *m, Operand *rop, Operand *wop);
 
 void op_repnz(Machine *m, Operand *rop, Operand *wop);
-
-
-// segments
-void op_es(Machine *m, Operand *rop, Operand *wop);
-
-void op_cs(Machine *m, Operand *rop, Operand *wop);
-
-void op_ss(Machine *m, Operand *rop, Operand *wop);
 
 
 // io

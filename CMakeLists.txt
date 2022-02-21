@@ -21,6 +21,7 @@ set(SOURCES
         src/opcodes.c
         src/instructions/support.c
         src/instructions/arithmetic.c
+        src/instructions/bcdcnv.c
         src/instructions/bitwise.c
         src/instructions/control.c
         src/instructions/io.c
@@ -112,3 +113,7 @@ add_test("Testcase JMPMOV" test_jmpmov)
 add_executable(test_datatrnf tests/test_datatrnf.c)
 target_link_libraries(test_datatrnf 80x86)
 add_test("Testcase DATATRNF" test_datatrnf)
+
+add_executable(test_bcdcnv tests/test_bcdcnv.c)
+target_link_libraries(test_bcdcnv 80x86)
+add_test("Testcase BCDCNV" test_bcdcnv)

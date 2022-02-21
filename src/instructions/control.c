@@ -1,24 +1,28 @@
 #include "instructions.h"
 
 void op_clc(Machine *m, Operand *rop, Operand *wop) {
+    // Clear CF flag.
     (void) rop;
     (void) wop;
     m->cpu->flags.CF = 0;
 }
 
 void op_cld(Machine *m, Operand *rop, Operand *wop) {
+    // Clear DF flag.
     (void) rop;
     (void) wop;
     m->cpu->flags.DF = 0;
 }
 
 void op_cli(Machine *m, Operand *rop, Operand *wop) {
+    // Clear interrupt flag; interrupts disabled when interrupt flag cleared.
     (void) rop;
     (void) wop;
     m->cpu->flags.IF = 0;
 }
 
 void op_cmc(Machine *m, Operand *rop, Operand *wop) {
+    // Complement CF flag.
     (void) rop;
     (void) wop;
     m->cpu->flags.CF = !m->cpu->flags.CF;
@@ -43,12 +47,14 @@ void op_sti(Machine *m, Operand *rop, Operand *wop) {
 }
 
 void op_nop(Machine *m, Operand *rop, Operand *wop) {
+    // One byte no-operation instruction.
     (void) m;
     (void) rop;
     (void) wop;
 }
 
 void op_hlt(Machine *m, Operand *rop, Operand *wop) {
+    // Halt
     (void) rop;
     (void) wop;
     m->cpu->halted = true;
