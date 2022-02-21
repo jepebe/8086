@@ -75,4 +75,5 @@ void test_testcase(Tester *tester, char *bin_path, char *res_path, bool check_fl
         }
     }
     testi(tester, error_count, 0, "Comparison with expected result");
+    printf("\x1b[0;32mInstruction count: %llu\x1b[0m\n", machine.cpu->instruction_count);
 }

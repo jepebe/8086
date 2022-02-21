@@ -133,6 +133,7 @@ typedef struct {
     SegmentOverride segment_override;
     Repeat repeat;
 
+    u64 instruction_count;
 } CPU;
 
 

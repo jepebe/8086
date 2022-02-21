@@ -67,6 +67,7 @@ void machine_tick(Machine *m) {
         Operand *write_op = &m->cpu->write_op;
 
         opcode.op_fn(m, read_op, write_op);
+        m->cpu->instruction_count++;
 
         disassemble_instruction(m, addr, opcode_num, opcode, write_op, read_op);
     } else {

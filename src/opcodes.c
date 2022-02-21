@@ -38,12 +38,14 @@ const Opcode opcodes[] = {
         [0x24] = {op_and_b, R_AL, IB, "AND"},
         [0x25] = {op_and_w, R_AX, IW, "AND"},
         [0x26] = {op_es, Implied, Implied, "ES:"},
+        [0x27] = {op_daa, Implied, Implied, "DAA"},
         [0x28] = {op_sub_b, RMB, RB, "SUB"},
         [0x29] = {op_sub_w, RMW, RW, "SUB"},
         [0x2A] = {op_sub_b, RB, RMB, "SUB"},
         [0x2B] = {op_sub_w, RW, RMW, "SUB"},
         [0x2C] = {op_sub_b, R_AL, IB, "SUB"},
         [0x2E] = {op_cs, Implied, Implied, "CS:"},
+        [0x2F] = {op_das, Implied, Implied, "DAS"},
 
         [0x30] = {op_xor_b, RMB, RB, "XOR"},
         [0x31] = {op_xor_w, RMW, RW, "XOR"},
@@ -52,10 +54,12 @@ const Opcode opcodes[] = {
         [0x34] = {op_xor_b, R_AL, IB, "XOR"},
         [0x35] = {op_xor_w, R_AX, IW, "XOR"},
         [0x36] = {op_ss, Implied, Implied, "SS:"},
+        [0x37] = {op_aaa, Implied, Implied, "AAA"},
         [0x38] = {op_cmp_b, RMB, RB, "CMP"},
         [0x39] = {op_cmp_w, RMW, RW, "CMP"},
         [0x3A] = {op_cmp_b, RB, RMB, "CMP"},
         [0x3C] = {op_cmp_b, R_AL, IB, "CMP"},
+        [0x3F] = {op_aas, Implied, Implied, "AAS"},
 
         [0x47] = {op_inc_w, R_DI, Implied, "INC"},
         [0x4F] = {op_dec_w, R_DI, Implied, "DEC"},
@@ -103,6 +107,8 @@ const Opcode opcodes[] = {
 
         [0x90] = {op_nop, Implied, Implied, "NOP"},
         [0x93] = {op_xchg_w, R_AX, R_BX, "XCHG"},
+        [0x98] = {op_cbw, Implied, Implied, "CBW"},
+        [0x99] = {op_cwd, Implied, Implied, "CWD"},
         [0x9C] = {op_pushf, Implied, Implied, "PUSHF"},
         [0x9A] = {op_call_far, Implied, IDW, "CALL"},
         [0x9D] = {op_popf, Implied, Implied, "POPF"},
@@ -529,67 +535,67 @@ void decode_write_op(Machine *machine, AddressOperandCode write_op) {
             break;
         }
         case R_AX: {
-            op->word =  &cpu->AX;
+            op->word = &cpu->AX;
             break;
         }
         case R_AL: {
-            op->byte =  &cpu->AL;
+            op->byte = &cpu->AL;
             break;
         }
         case R_AH: {
-            op->byte =  &cpu->AH;
+            op->byte = &cpu->AH;
             break;
         }
         case R_BX: {
-            op->word =  &cpu->BX;
+            op->word = &cpu->BX;
             break;
         }
         case R_BL: {
-            op->byte =  &cpu->BL;
+            op->byte = &cpu->BL;
             break;
         }
         case R_CX: {
-            op->word =  &cpu->CX;
+            op->word = &cpu->CX;
             break;
         }
         case R_CL: {
-            op->byte =  &cpu->CL;
+            op->byte = &cpu->CL;
             break;
         }
         case R_CH: {
-            op->byte =  &cpu->CH;
+            op->byte = &cpu->CH;
             break;
         }
         case R_DX: {
-            op->word =  &cpu->DX;
+            op->word = &cpu->DX;
             break;
         }
         case R_DH: {
-            op->byte =  &cpu->DH;
+            op->byte = &cpu->DH;
             break;
         }
         case R_DL: {
-            op->byte =  &cpu->DL;
+            op->byte = &cpu->DL;
             break;
         }
         case R_BP: {
-            op->word =  &cpu->BP;
+            op->word = &cpu->BP;
             break;
         }
         case R_SP: {
-            op->word =  &cpu->SP;
+            op->word = &cpu->SP;
             break;
         }
         case R_SI: {
-            op->word =  &cpu->SI;
+            op->word = &cpu->SI;
             break;
         }
         case R_DI: {
-            op->word =  &cpu->DI;
+            op->word = &cpu->DI;
             break;
         }
         case R_ES: {
-            op->word =  &cpu->ES;
+            op->word = &cpu->ES;
             break;
         }
         case RMB:

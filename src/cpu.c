@@ -10,6 +10,7 @@ void cpu_reset(CPU *cpu) {
     cpu->segment_override = DEFAULT_SEGMENT;
     cpu->read_op = (Operand) {0};
     cpu->write_op = (Operand) {0};
+    cpu->instruction_count = 0;
 }
 
 u32 cpu_ip(CPU *cpu) {

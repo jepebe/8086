@@ -269,12 +269,9 @@ void op_stos_b(Machine *m, Operand *rop, Operand *wop);
 void op_stos_w(Machine *m, Operand *rop, Operand *wop);
 
 
-
 void op_repz(Machine *m, Operand *rop, Operand *wop);
 
 void op_repnz(Machine *m, Operand *rop, Operand *wop);
-
-
 
 
 // segments
@@ -287,3 +284,23 @@ void op_ss(Machine *m, Operand *rop, Operand *wop);
 
 // io
 void op_out_w(Machine *m, Operand *rop, Operand *wop);
+
+// BCD and CNV
+
+/// ASCII adjust AL after addition.
+void op_aaa(Machine *m, Operand *rop, Operand *wop);
+
+/// ASCII adjust AL after subtraction.
+void op_aas(Machine *m, Operand *rop, Operand *wop);
+
+/// Decimal adjust AL after addition.
+void op_daa(Machine *m, Operand *rop, Operand *wop);
+
+/// Decimal adjust AL after subtraction.
+void op_das(Machine *m, Operand *rop, Operand *wop);
+
+/// AX ← sign-extend of AL.
+void op_cbw(Machine *m, Operand *rop, Operand *wop);
+
+/// DX:AX ← sign-extend of AX.
+void op_cwd(Machine *m, Operand *rop, Operand *wop);
