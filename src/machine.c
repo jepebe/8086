@@ -69,7 +69,7 @@ void machine_tick(Machine *m) {
         opcode.op_fn(m, read_op, write_op);
         m->cpu->instruction_count++;
 
-        disassemble_instruction(m, addr, opcode_num, opcode, write_op, read_op);
+//        disassemble_instruction(m, addr, opcode_num, opcode, write_op, read_op);
     } else {
         cpu_error_marker(m, __FILE__, __LINE__);
         cpu_error(m, "opcode 0x%02X not implemented", opcode_num);

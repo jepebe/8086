@@ -18,6 +18,7 @@ const Opcode opcodes[] = {
         [0x0B] = {op_or_w, RW, RMW, "OR"},
         [0x0C] = {op_or_b, R_AL, IB, "OR"},
         [0x0D] = {op_or_w, R_AX, IW, "OR"},
+        [0x0E] = {op_push, Implied, R_CS, "PUSH"},
 
         [0x10] = {op_adc_b, RMB, RB, "ADC"},
         [0x11] = {op_adc_w, RMW, RW, "ADC"},
@@ -30,6 +31,8 @@ const Opcode opcodes[] = {
         [0x1A] = {op_sbb_b, RB, RMB, "SBB"},
         [0x1B] = {op_sbb_w, RW, RMW, "SBB"},
         [0x1C] = {op_sbb_b, R_AL, IB, "SBB"},
+        [0x1E] = {op_push, Implied, R_DS, "PUSH"},
+        [0x1F] = {op_pop, R_DS, Implied, "POP"},
 
         [0x20] = {op_and_b, RMB, RB, "AND"},
         [0x21] = {op_and_w, RMW, RW, "AND"},
@@ -44,6 +47,7 @@ const Opcode opcodes[] = {
         [0x2A] = {op_sub_b, RB, RMB, "SUB"},
         [0x2B] = {op_sub_w, RW, RMW, "SUB"},
         [0x2C] = {op_sub_b, R_AL, IB, "SUB"},
+        [0x2D] = {op_sub_w, R_AX, IW, "SUB"},
         [0x2E] = {op_cs, Implied, Implied, "CS:"},
         [0x2F] = {op_das, Implied, Implied, "DAS"},
 
@@ -58,21 +62,34 @@ const Opcode opcodes[] = {
         [0x38] = {op_cmp_b, RMB, RB, "CMP"},
         [0x39] = {op_cmp_w, RMW, RW, "CMP"},
         [0x3A] = {op_cmp_b, RB, RMB, "CMP"},
+        [0x3B] = {op_cmp_w, RW, RMW, "CMP"},
         [0x3C] = {op_cmp_b, R_AL, IB, "CMP"},
+        [0x3D] = {op_cmp_w, R_AX, IW, "CMP"},
         [0x3F] = {op_aas, Implied, Implied, "AAS"},
 
+        [0x40] = {op_inc_w, R_AX, Implied, "INC"},
+        [0x42] = {op_inc_w, R_DX, Implied, "INC"},
+        [0x43] = {op_inc_w, R_BX, Implied, "INC"},
+        [0x46] = {op_inc_w, R_SI, Implied, "INC"},
         [0x47] = {op_inc_w, R_DI, Implied, "INC"},
+        [0x4A] = {op_dec_w, R_DX, Implied, "DEC"},
+        [0x4B] = {op_dec_w, R_BX, Implied, "DEC"},
+        [0x4D] = {op_dec_w, R_BP, Implied, "DEC"},
         [0x4F] = {op_dec_w, R_DI, Implied, "DEC"},
 
         [0x50] = {op_push, Implied, R_AX, "PUSH"},
         [0x51] = {op_push, Implied, R_CX, "PUSH"},
         [0x52] = {op_push, Implied, R_DX, "PUSH"},
         [0x53] = {op_push, Implied, R_BX, "PUSH"},
+        [0x55] = {op_push, Implied, R_BP, "PUSH"},
+        [0x56] = {op_push, Implied, R_SI, "PUSH"},
         [0x57] = {op_push, Implied, R_DI, "PUSH"},
         [0x58] = {op_pop, R_AX, Implied, "POP"},
         [0x59] = {op_pop, R_CX, Implied, "POP"},
         [0x5A] = {op_pop, R_DX, Implied, "POP"},
         [0x5B] = {op_pop, R_BX, Implied, "POP"},
+        [0x5D] = {op_pop, R_BP, Implied, "POP"},
+        [0x5E] = {op_pop, R_SI, Implied, "POP"},
         [0x5F] = {op_pop, R_DI, Implied, "POP"},
 
         [0x70] = {op_jo, Implied, IB, "JO"},
@@ -115,6 +132,7 @@ const Opcode opcodes[] = {
         [0x9E] = {op_sahf, Implied, Implied, "SAHF"},
         [0x9F] = {op_lahf, Implied, Implied, "LAHF"},
 
+        [0xA0] = {op_mov_b, R_AL, IA, "MOV"},
         [0xA1] = {op_mov_w, R_AX, IA, "MOV"},
         [0xA2] = {op_mov_b, IA, R_AL, "MOV"},
         [0xA3] = {op_mov_w, IA, R_AX, "MOV"},
@@ -138,6 +156,7 @@ const Opcode opcodes[] = {
         [0xB4] = {op_mov_b, R_AH, IB, "MOV"},
         [0xB5] = {op_mov_b, R_CH, IB, "MOV"},
         [0xB6] = {op_mov_b, R_DH, IB, "MOV"},
+        [0xB7] = {op_mov_b, R_BH, IB, "MOV"},
         [0xB8] = {op_mov_w, R_AX, IW, "MOV"},
         [0xB9] = {op_mov_w, R_CX, IW, "MOV"},
         [0xBA] = {op_mov_w, R_DX, IW, "MOV"},
@@ -162,16 +181,22 @@ const Opcode opcodes[] = {
         [0xD4] = {op_aam, Implied, IB, "AAM"},
         [0xD5] = {op_aad, Implied, IB, "AAD"},
         [0xD7] = {op_xlat, Implied, Implied, "XLAT"},
+        [0xDB] = {op_nop, Implied, IB, "FINIT"},
+        [0xD9] = {op_nop, Implied, IB, "FNSTCW"},
 
         [0xE0] = {op_loopne, Implied, IB, "LOOPNE"},
         [0xE1] = {op_loope, Implied, IB, "LOOPE"},
         [0xE2] = {op_loop, Implied, IB, "LOOP"},
         [0xE3] = {op_jmp_cxz, Implied, IB, "JCXZ"},
+        [0xE4] = {op_in_b_portb, R_AL, IB, "IN"},
+        [0xE6] = {op_out_b_portb, IB, R_AL, "OUT"},
         [0xE8] = {op_call_relative, Implied, IW, "CALL"},
         [0xE9] = {op_jmp_near_relative, Implied, IW, "JMP"},
         [0xEA] = {op_jmp_far, Implied, IDW, "JMP"},
         [0xEB] = {op_jmp_short, Implied, IB, "JMP"},
-        [0xEF] = {op_out_w, R_DX, R_AX, "OUT"},
+        [0xEC] = {op_in_b_portw, R_AL, R_DX, "IN"},
+        [0xEE] = {op_out_b_portw, R_DX, R_AL, "OUT"},
+        [0xEF] = {op_out_w_portw, R_DX, R_AX, "OUT"},
 
         [0xF2] = {op_repnz, Implied, Implied, "REPNZ"},
         [0xF3] = {op_repz, Implied, Implied, "REPZ"},
@@ -437,6 +462,10 @@ void decode_read_op(Machine *machine, AddressOperandCode read_op) {
             op->word = &cpu->BX;
             break;
         }
+        case R_BP: {
+            op->word = &cpu->BP;
+            break;
+        }
         case R_CX: {
             op->word = &cpu->CX;
             break;
@@ -451,6 +480,18 @@ void decode_read_op(Machine *machine, AddressOperandCode read_op) {
         }
         case R_DI: {
             op->word = &cpu->DI;
+            break;
+        }
+        case R_SI: {
+            op->word = &cpu->SI;
+            break;
+        }
+        case R_CS: {
+            op->word = &cpu->CS;
+            break;
+        }
+        case R_DS: {
+            op->word = &cpu->DS;
             break;
         }
         case R_ES: {
@@ -534,6 +575,14 @@ void decode_write_op(Machine *machine, AddressOperandCode write_op) {
             cpu->IP += 2;
             break;
         }
+        case IB: {
+            u32 addr = cpu_ip(cpu);
+            u8 b = read_memory_u8(addr, mem);
+            op->byte_cache = b;
+            op->byte = (u8 *) &op->byte_cache;
+            cpu->IP += 1;
+            break;
+        }
         case R_AX: {
             op->word = &cpu->AX;
             break;
@@ -552,6 +601,10 @@ void decode_write_op(Machine *machine, AddressOperandCode write_op) {
         }
         case R_BL: {
             op->byte = &cpu->BL;
+            break;
+        }
+        case R_BH: {
+            op->byte = &cpu->BH;
             break;
         }
         case R_CX: {
@@ -592,6 +645,10 @@ void decode_write_op(Machine *machine, AddressOperandCode write_op) {
         }
         case R_DI: {
             op->word = &cpu->DI;
+            break;
+        }
+        case R_DS: {
+            op->word = &cpu->DS;
             break;
         }
         case R_ES: {

@@ -176,6 +176,7 @@ static const MemoryMnemonic AOC_TABLE[AOC_COUNT] = {
         [R_AH] = {.name ="AH"},
         [R_BX] = {.name ="BX"},
         [R_BL] = {.name ="BL"},
+        [R_BH] = {.name ="BH"},
         [R_CX] = {.name ="CX"},
         [R_CL] = {.name ="CL"},
         [R_CH] = {.name ="CH"},
@@ -186,6 +187,8 @@ static const MemoryMnemonic AOC_TABLE[AOC_COUNT] = {
         [R_SP] = {.name ="SP"},
         [R_SI] = {.name ="SI"},
         [R_DI] = {.name ="DI"},
+        [R_CS] = {.name ="CS"},
+        [R_DS] = {.name ="DS"},
         [R_ES] = {.name ="ES"},
 };
 

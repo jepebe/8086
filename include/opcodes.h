@@ -30,6 +30,8 @@ typedef enum {
     R_BX,
     /// Register BL
     R_BL,
+    /// Register BH
+    R_BH,
     /// Register CX
     R_CX,
     /// Register CL
@@ -50,6 +52,10 @@ typedef enum {
     R_SI,
     /// Register DI - Destination Index
     R_DI,
+    /// Register CS - Data Segment
+    R_CS,
+    /// Register DS - Data Segment
+    R_DS,
     /// Register ES - Extra Segment
     R_ES,
     /// Register or Memory Byte

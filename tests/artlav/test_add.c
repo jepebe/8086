@@ -1,6 +1,6 @@
 #include <stdlib.h>
-#include "testing.h"
-#include "testing80x86.h"
+#include "../testing.h"
+#include "../testing80x86.h"
 
 
 int main() {
@@ -9,8 +9,8 @@ int main() {
     test_section("add.bin");
     test_testcase(
             &tester,
-            "../tests/bins/add.bin",
-            "../tests/bins/results/res_add.bin",
+            "../tests/artlav/bins/add.bin",
+            "../tests/artlav/bins/results/res_add.bin",
             true
     );
 

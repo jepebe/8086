@@ -111,10 +111,8 @@ void op_call_direct(Machine *m, Operand *rop, Operand *wop) {
 void op_call_relative(Machine *m, Operand *rop, Operand *wop) {
     // Call near, relative, displacement relative to next instruction.
     (void) wop;
-    dump_cpu(m);
     op_push(m, &m->IP, NULL);
     m->cpu->IP += (s16) *(rop->word);
-    dump_cpu(m);
 }
 
 void op_call_far(Machine *m, Operand *rop, Operand *wop) {
@@ -143,6 +141,11 @@ void op_int(Machine *m, Operand *rop, Operand *wop) {
     (void) wop;
     u8 interrupt = *rop->byte;
 
+    if (interrupt == 0x10) {
+        cpu_note(m, "interrupt 10h = '%c' AH=0x%02X", m->cpu->AL, m->cpu->AH);
+    }
+
+    cpu_note(m, "interrupt %02Xh", interrupt);
     op_pushf(m, NULL, NULL);
     m->cpu->flags.IF = 0;
     m->cpu->flags.TF = 0;
@@ -151,6 +154,8 @@ void op_int(Machine *m, Operand *rop, Operand *wop) {
 
     m->cpu->IP = read_memory_u16(interrupt * 4, m->memory);
     m->cpu->CS = read_memory_u16(interrupt * 4 + 2, m->memory);
+
+
 }
 
 void op_es(Machine *m, Operand *rop, Operand *wop) {

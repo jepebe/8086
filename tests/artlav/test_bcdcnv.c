@@ -1,6 +1,6 @@
 #include <stdlib.h>
-#include "testing.h"
-#include "testing80x86.h"
+#include "../testing.h"
+#include "../testing80x86.h"
 
 
 int main() {
@@ -9,8 +9,8 @@ int main() {
     test_section("bcdcnv.bin");
     test_testcase(
             &tester,
-            "../tests/bins/bcdcnv.bin",
-            "../tests/bins/results/res_bcdcnv.bin",
+            "../tests/artlav/bins/bcdcnv.bin",
+            "../tests/artlav/bins/results/res_bcdcnv.bin",
             true
     );
 

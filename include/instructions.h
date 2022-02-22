@@ -291,7 +291,21 @@ void op_repnz(Machine *m, Operand *rop, Operand *wop);
 
 
 // io
-void op_out_w(Machine *m, Operand *rop, Operand *wop);
+/// Input byte from imm8 I/O port address into AL.
+void op_in_b_portb(Machine *m, Operand *rop, Operand *wop);
+
+/// Input byte from I/O port in DX into AL.
+void op_in_b_portw(Machine *m, Operand *rop, Operand *wop);
+
+/// Output byte in AL to I/O port address imm8.
+void op_out_b_portb(Machine *m, Operand *rop, Operand *wop);
+
+/// Output byte in AL to I/O port address in DX.
+void op_out_b_portw(Machine *m, Operand *rop, Operand *wop);
+
+/// Output word in AX to I/O port address imm8.
+void op_out_w_portw(Machine *m, Operand *rop, Operand *wop);
+
 
 // BCD and CNV
 
